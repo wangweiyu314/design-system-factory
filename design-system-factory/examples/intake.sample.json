@@ -1,0 +1,61 @@
+{
+  "_说明": "人工标注兜底模板：Figma 与线上采集都拿不到时，照着填。填不出来的字段留空字符串，不要猜——空值会在挖掘报告里被标成未采集，猜的值不会。",
+
+  "system": {
+    "name": "某某资管平台",
+    "prefix": "am",
+    "domain": "资产管理 / 中后台",
+    "pages": ["列表页", "表单页", "详情页"]
+  },
+
+  "figma": {
+    "fileUrl": "",
+    "version": "",
+    "exportFile": "",
+    "_提示": "能导出就把导出的 JSON/CSV 路径填这里，比手填准得多"
+  },
+
+  "online": {
+    "urls": ["", "", ""],
+    "needsLogin": true,
+    "collectFiles": [],
+    "_提示": "能打开页面的人跑 collect-from-browser.js，把导出的 JSON 路径填这里"
+  },
+
+  "tokens": {
+    "_格式": "只填确认过的，没确认的留空",
+    "colorPrimary": "",
+    "colorPrimaryHover": "",
+    "colorTextPrimary": "",
+    "colorTextSecondary": "",
+    "colorBorder": "",
+    "colorBgPage": "",
+    "colorSuccess": "",
+    "colorWarning": "",
+    "colorError": "",
+    "gridBase": 8,
+    "radiusDefault": "",
+    "fontSizeBody": "",
+    "fontFamily": ""
+  },
+
+  "structure": {
+    "_格式": "布尔值，不确定填 false",
+    "hasSidebar": false,
+    "hasTopBar": false,
+    "hasTable": false,
+    "hasForm": false,
+    "hasDashboard": false,
+    "hasLogin": false,
+    "hasModal": false,
+    "hasDrawer": false,
+    "hasTabs": false,
+    "hasChart": false
+  },
+
+  "openQuestions": [
+    "主色确认了吗？",
+    "网格基数是 4 还是 8？",
+    "有没有独立的涨跌色（金融类系统）？"
+  ]
+}

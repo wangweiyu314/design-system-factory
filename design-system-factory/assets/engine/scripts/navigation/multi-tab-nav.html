@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多标签导航模板 - 广发中后台设计系统</title>
+  <!--
+    ============================================================
+    模板：多标签导航（MultiTab）
+    规范：components/navigation.md §6「横向溢出与切换箭头（强制）」
+    版本：design-specs v2.4
+
+    强约束 #19（务必保留）：
+      · 标签溢出时用左右箭头切换，禁止出现可见滚动条挤压 40px 栏高
+      · 视口 overflow-x: auto + scrollbar-width: none，由箭头编程滚动 scrollLeft
+      · 选中态指示线用 border-bottom（margin-bottom: -1px 贴合分割线），
+        不用 ::after —— ::after 会被视口 overflow 裁剪
+
+    关闭策略（已内置）：
+      1. data-closable="false" 的标签（如首页）不可关闭
+      2. 至少保留 1 个标签，不允许全部关闭
+      3. 关闭激活标签后自动激活相邻标签（优先左侧）
+    ============================================================
+  -->
+  <style>
+    :root {
+      --color-primary: #2A6CDD;
+      --color-primary-light: rgba(42, 108, 221, 0.1);
+      --color-bg-canvas: #F7F8FA;
+      --color-bg-card: #FFFFFF;
+      --color-border: #F0F2F5;
+      --color-fill-secondary: #F0F2F5;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-heading: #13161B;
+      --tab-height: 40px;
+      --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.12);
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px;
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      --z-index-nav-popup: 1100;
+          --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --color-white: #FFFFFF;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg-canvas);
+      color: var(--color-text);
+      font-size: 14px; line-height: 1.5; padding: var(--space-6);
+      -webkit-font-smoothing: antialiased;
+    }
+    button { font-family: var(--font-family); }
+
+    /* ============ 多标签栏 ============ */
+    .gf-tabsbar {
+      height: var(--tab-height); background: var(--color-bg-card);
+      border-bottom: 1px solid var(--color-border);
+      border-radius: var(--radius-card) var(--radius-card) 0 0;
+      display: flex; align-items: stretch;
+      box-shadow: var(--shadow-subtle);
+    }
+    /* 左右切换箭头：未溢出时 visibility: hidden 占位，避免布局跳动 */
+    .gf-tabsbar__arrow {
+      width: 32px; flex-shrink: 0; border: none; background: var(--color-bg-card);
+      color: var(--color-text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s, color 0.2s;
+      visibility: hidden;
+    }
+    .gf-tabsbar__arrow--visible { visibility: visible; }
+    .gf-tabsbar__arrow:hover { background: var(--color-bg-canvas); color: var(--color-text); }
+
+    /* 视口承载横向滚动，滚动条隐藏（由箭头控制滚动） */
+    .gf-tabsbar__viewport {
+      flex: 1; min-width: 0; position: relative;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none;
+    }
+    .gf-tabsbar__viewport::-webkit-scrollbar { display: none; }
+    .gf-tabsbar__track { display: inline-flex; align-items: stretch; height: var(--tab-height); padding: 0 var(--space-2); }
+
+    .gf-tabsbar__tab {
+      display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4);
+      height: var(--tab-height); box-sizing: border-box;
+      font-size: 13px; color: var(--color-text-secondary); cursor: pointer; position: relative;
+      white-space: nowrap; user-select: none;
+    }
+    .gf-tabsbar__tab:hover { color: var(--color-text); }
+    /* 选中态：border-bottom 属于元素自身边框，不受祖先 overflow 裁剪 */
+    .gf-tabsbar__tab--active {
+      color: var(--color-primary); font-weight: 500;
+      border-bottom: 2px solid var(--color-primary);
+      padding-bottom: 0; margin-bottom: -1px;
+    }
+    .gf-tabsbar__close {
+      width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; border-radius: var(--radius-btn);
+      color: var(--color-text-tertiary); cursor: pointer; padding: 0;
+    }
+    .gf-tabsbar__close:hover { background: var(--color-fill-secondary); color: var(--color-text); }
+
+    /* 右键菜单 */
+    .gf-tabmenu {
+      position: fixed; z-index: var(--z-index-nav-popup);
+      background: var(--color-bg-card); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-dropdown); padding: var(--space-2) 0;
+      min-width: 120px; display: none;
+    }
+    .gf-tabmenu--open { display: block; }
+    .gf-tabmenu__item {
+      display: block; width: 100%; text-align: left;
+      padding: var(--space-2) var(--space-4); border: none; background: none;
+      font-size: 13px; color: var(--color-text); cursor: pointer; white-space: nowrap;
+    }
+    .gf-tabmenu__item:hover { background: var(--color-primary-light); color: var(--color-primary); }
+
+    /* 演示区 */
+    .gf-demo { background: var(--color-bg-card); border-radius: var(--radius-card); padding: var(--space-6); }
+    .gf-demo__hint { font-size: 13px; color: var(--color-text-tertiary); margin-top: var(--space-4); line-height: 1.8; }
+    .gf-demo__bar { margin-top: var(--space-4); display: flex; gap: var(--space-2); }
+    .gf-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      height: 32px; padding: 0 var(--space-4); font-size: 14px;
+      border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-white);
+      border-radius: var(--radius-btn); cursor: pointer; white-space: nowrap; line-height: 1;
+    }
+    .gf-btn:hover { filter: brightness(0.94); }
+    .gf-btn--secondary { border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text); }
+    .gf-btn--secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
+    .gf-demo__panel { padding: var(--space-6) 0; font-size: 13px; color: var(--color-text-secondary); }
+  </style>
+</head>
+<body>
+  <div class="gf-demo">
+    <!-- ============ 多标签导航 ============ -->
+    <nav class="gf-tabsbar" aria-label="多标签导航">
+      <button class="gf-tabsbar__arrow" id="tabArrowPrev" title="上一个标签" aria-label="向左切换标签">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 3L4 6L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="gf-tabsbar__viewport" id="tabsViewport">
+        <div class="gf-tabsbar__track" id="tabsbar">
+          <!-- 首页固定不可关闭 -->
+          <div class="gf-tabsbar__tab gf-tabsbar__tab--active" data-closable="false">首页</div>
+          <!-- 业务替换点：标签项由路由动态生成，data-closable="true" 表示可关闭 -->
+          <div class="gf-tabsbar__tab" data-closable="true">基金产品管理
+            <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="gf-tabsbar__tab" data-closable="true">交易申报记录查询
+            <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="gf-tabsbar__tab" data-closable="true">持仓分析报表
+            <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="gf-tabsbar__tab" data-closable="true">客户信息维护
+            <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+          <div class="gf-tabsbar__tab" data-closable="true">合规审查流程配置
+            <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      <button class="gf-tabsbar__arrow" id="tabArrowNext" title="下一个标签" aria-label="向右切换标签">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 3L8 6L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </nav>
+
+    <!-- 右键菜单 -->
+    <div class="gf-tabmenu" id="tabMenu">
+      <button class="gf-tabmenu__item" data-action="refresh">刷新标签</button>
+      <button class="gf-tabmenu__item" data-action="close">关闭当前</button>
+      <button class="gf-tabmenu__item" data-action="closeOthers">关闭其他</button>
+      <button class="gf-tabmenu__item" data-action="closeAll">关闭全部</button>
+    </div>
+
+    <div class="gf-demo__panel" id="activePanel">当前激活标签：首页</div>
+
+    <div class="gf-demo__bar">
+      <button class="gf-btn" id="btnAddTab">新增标签</button>
+      <button class="gf-btn gf-btn--secondary" id="btnAddMany">批量新增 5 个（验证箭头）</button>
+    </div>
+
+    <p class="gf-demo__hint">
+      交互说明：<br>
+      · 点击标签切换激活态；点击 × 关闭（首页不可关闭，至少保留 1 个标签）<br>
+      · 标签总宽溢出时自动显示左右箭头，滚动条始终隐藏<br>
+      · 右键标签弹出菜单：刷新 / 关闭当前 / 关闭其他 / 关闭全部<br>
+      · 关闭激活标签后自动激活相邻标签（优先左侧）
+    </p>
+  </div>
+
+  <script>
+    (function () {
+      var tabsbar = document.getElementById('tabsbar');
+      var tabsViewport = document.getElementById('tabsViewport');
+      var tabArrowPrev = document.getElementById('tabArrowPrev');
+      var tabArrowNext = document.getElementById('tabArrowNext');
+      var tabMenu = document.getElementById('tabMenu');
+      var activePanel = document.getElementById('activePanel');
+      var TAB_SCROLL_STEP = 120;
+      var autoIndex = 1;
+      var menuTarget = null;
+
+      /* ---------- 箭头可见态：溢出且未到边界时显示 ---------- */
+      function updateTabArrows() {
+        var overflow = tabsViewport.scrollWidth > tabsViewport.clientWidth + 1;
+        var atStart = tabsViewport.scrollLeft <= 1;
+        var atEnd = tabsViewport.scrollLeft >= tabsViewport.scrollWidth - tabsViewport.clientWidth - 1;
+        tabArrowPrev.classList.toggle('gf-tabsbar__arrow--visible', overflow && !atStart);
+        tabArrowNext.classList.toggle('gf-tabsbar__arrow--visible', overflow && !atEnd);
+      }
+      tabArrowPrev.addEventListener('click', function () { tabsViewport.scrollLeft -= TAB_SCROLL_STEP; });
+      tabArrowNext.addEventListener('click', function () { tabsViewport.scrollLeft += TAB_SCROLL_STEP; });
+      tabsViewport.addEventListener('scroll', updateTabArrows);
+      window.addEventListener('resize', updateTabArrows);
+
+      function tabLabel(tab) {
+        var clone = tab.cloneNode(true);
+        var btn = clone.querySelector('.gf-tabsbar__close');
+        if (btn) btn.remove();
+        return clone.textContent.trim();
+      }
+      function activate(tab) {
+        if (!tab) return;
+        tabsbar.querySelectorAll('.gf-tabsbar__tab').forEach(function (t) { t.classList.remove('gf-tabsbar__tab--active'); });
+        tab.classList.add('gf-tabsbar__tab--active');
+        activePanel.textContent = '当前激活标签：' + tabLabel(tab);
+      }
+      function tabs() { return Array.prototype.slice.call(tabsbar.children); }
+
+      /* ---------- 关闭单个标签（含三项关闭策略） ---------- */
+      function closeTab(tab) {
+        if (!tab || tab.dataset.closable !== 'true') return;      // 策略 1：固定标签不可关闭
+        var list = tabs();
+        if (list.length <= 1) return;                              // 策略 2：至少保留 1 个
+        var index = list.indexOf(tab);
+        var wasActive = tab.classList.contains('gf-tabsbar__tab--active');
+        tab.remove();
+        if (wasActive) {                                           // 策略 3：激活相邻标签
+          var next = list[index - 1] || list[index + 1];
+          activate(next);
+        }
+        updateTabArrows();
+      }
+
+      /* ---------- 点击：切换 / 关闭 ---------- */
+      tabsbar.addEventListener('click', function (e) {
+        var tab = e.target.closest('.gf-tabsbar__tab');
+        if (!tab) return;
+        if (e.target.closest('.gf-tabsbar__close')) { closeTab(tab); return; }
+        activate(tab);
+      });
+
+      /* ---------- 右键菜单 ---------- */
+      tabsbar.addEventListener('contextmenu', function (e) {
+        var tab = e.target.closest('.gf-tabsbar__tab');
+        if (!tab) return;
+        e.preventDefault();
+        menuTarget = tab;
+        tabMenu.classList.add('gf-tabmenu--open');
+        tabMenu.style.left = e.clientX + 'px';
+        tabMenu.style.top = e.clientY + 'px';
+      });
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('.gf-tabmenu')) tabMenu.classList.remove('gf-tabmenu--open');
+      });
+      tabMenu.addEventListener('click', function (e) {
+        var item = e.target.closest('.gf-tabmenu__item');
+        if (!item || !menuTarget) return;
+        var action = item.dataset.action;
+        var list = tabs();
+        if (action === 'refresh') {
+          activePanel.textContent = '已刷新标签：' + tabLabel(menuTarget);
+        } else if (action === 'close') {
+          closeTab(menuTarget);
+        } else if (action === 'closeOthers') {
+          list.forEach(function (t) { if (t !== menuTarget) closeTab(t); });
+          activate(menuTarget);
+        } else if (action === 'closeAll') {
+          list.forEach(function (t) { if (t.dataset.closable === 'true') closeTab(t); });
+        }
+        tabMenu.classList.remove('gf-tabmenu--open');
+        updateTabArrows();
+      });
+
+      /* ---------- 新增标签（演示用） ---------- */
+      function addTab(title) {
+        var tab = document.createElement('div');
+        tab.className = 'gf-tabsbar__tab';
+        tab.setAttribute('data-closable', 'true');
+        tab.innerHTML = title +
+          '<button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签">' +
+          '<svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+          '<path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>';
+        tabsbar.appendChild(tab);
+        activate(tab);
+        updateTabArrows();
+        tabsViewport.scrollLeft = tabsViewport.scrollWidth;   // 滚动到末尾
+      }
+      /* 演示按钮在复用为组件时通常被移除，此处做存在性判断，避免拼装后报错 */
+      var btnAddTab = document.getElementById('btnAddTab');
+      var btnAddMany = document.getElementById('btnAddMany');
+      if (btnAddTab) btnAddTab.addEventListener('click', function () { addTab('新标签页 ' + (autoIndex++)); });
+      if (btnAddMany) btnAddMany.addEventListener('click', function () { for (var i = 0; i < 5; i++) addTab('批量标签 ' + (autoIndex++)); });
+
+      updateTabArrows();
+    })();
+  </script>
+</body>
+</html>

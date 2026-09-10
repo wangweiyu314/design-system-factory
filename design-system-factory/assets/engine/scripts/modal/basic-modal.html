@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="08YvQzfRGugdEgQqHiCT1f">
+<head data-page-node-id="bK7AZ3EQSVyxWq2O8qrX2T">
+  <meta charset="UTF-8" data-page-node-id="fxd0Z7u6CXHuu7dKG6LzYo">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="VDbyT0NGXA7e6pXxKsDP43">
+  <title>弹窗模板 - 广发中后台设计系统</title>
+  <!--
+    ============================================================
+    模板：弹窗 Modal（三段式）
+    规范：components/feedback.md §1 + §Modal 三段式结构规范 + foundation/tokens.md
+    版本：design-specs v2.6
+
+    三段式结构（强制）：
+      .gf-modal__header  高度 --floating-header-height(52px) / padding 0 24px / 底分割线
+      .gf-modal__body    padding 24px / 唯一滚动区，禁止把按钮放进 body
+      .gf-modal__footer  高度 --floating-footer-height(52px) / padding 12px 24px / 顶分割线 / 按钮右对齐
+
+    三档宽度（禁止自由数值）：
+      --modal-confirm-width  480px  二次确认、简短提示
+      --modal-form-width     640px  普通单列表单
+      --modal-complex-width  800px  复杂表单、多模块配置、列表弹窗
+
+    必做替换（搜索「业务替换点」）：
+      1. 弹窗标题 .gf-modal__title 文案
+      2. body 内容（表单字段 / 表格 / 提示文案）
+      3. footer 按钮文案与回调（onConfirm / onCancel）
+      4. 展示类浮层可删除整个 .gf-modal__footer（等于 React 的 footer={null}）
+
+    强约束（改动即踩坑）：
+      · container 必须 padding: 0，否则会多叠一圈空白、分割线左右不到头
+      · 必须上下居中（align-items: center），禁止贴顶
+      · 必须有视口兜底 max-width: calc(100vw - 48px)
+      · 展示类（详情、只读）默认不生成 footer；操作类（新增、编辑、审批）必须有固定可见操作区
+      · 图标必须内联 SVG，禁止图标库、图标字体、外链图片
+    ============================================================
+  -->
+  <style>
+    :root {
+      /* ---- 品牌与功能色（取值唯一来源：foundation/tokens.md） ---- */
+      --color-primary: #2A6CDD;
+      --color-primary-hover: #1E5BBF;
+      --color-primary-active: #164A9E;
+      --color-primary-light: rgba(42, 108, 221, 0.1);
+      --color-primary-focus: rgba(42, 108, 221, 0.2);
+      --color-error: #F5222D;
+      --color-error-text: #C80000;
+      --color-on-primary: #FFFFFF;
+      /* ---- 中性色 ---- */
+      --color-white: #FFFFFF;
+      --color-bg-canvas: #F7F8FA;
+      --color-bg-card: #FFFFFF;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-quaternary: #C8C9CC;
+      --color-text-heading: #13161B;
+      --color-border: #F0F2F5;
+      --color-border-secondary: #E6EAF0;
+      --color-border-strong: #D7DCE0;
+      /* ---- 表格（复杂弹窗内嵌表格用） ---- */
+      --color-table-header-bg: #F7F8FA;
+      --color-table-row-hover: #F5F5F5;
+      --color-table-action: #2A6CDD;
+      --color-table-action-hover: #1E5BBF;
+      --color-table-divider: #E6EAF0;
+      /* ---- 浮层遮罩与尺寸 ---- */
+      --color-mask: rgba(0, 0, 0, 0.6);
+      --modal-confirm-width: 480px;
+      --modal-form-width: 640px;
+      --modal-complex-width: 800px;
+      --floating-header-height: 52px;
+      --floating-footer-height: 52px;
+      --floating-content-padding: 24px;
+      /* ---- 圆角 / 阴影 / 间距 / 字号 / 动效 ---- */
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --shadow-medium: 0px 6px 16px rgba(0, 0, 0, 0.12);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      --font-size-body: 14px;
+      --font-size-body-lg: 16px;
+      --font-size-body-sm: 12px;
+      --line-height-body: 1.5em;
+      --transition-fast: 200ms ease-in-out;
+      --z-index-nav-popup: 1100;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: var(--space-8);
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-body);
+      color: var(--color-text);
+      background: var(--color-bg-canvas);
+    }
+
+    /* ============================================================
+       演示用触发区（业务接入时删除）
+       ============================================================ */
+    .demo-launch { max-width: 800px; margin: 0 auto; }
+    .demo-launch h1 { font-size: var(--font-size-body-lg); font-weight: 500; color: var(--color-text-heading); margin: 0 0 var(--space-4); }
+    .demo-launch__row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+
+    /* ============================================================
+       按钮（组件级，业务可直接复用）
+       语义：裸 .gf-btn = 主按钮，--secondary = 次按钮，--danger = 危险
+       规范：components/basic.md §按钮 CSS 类语义（强制）
+       禁止再写 .gf-btn--primary（历史上语义相反，会导致宿主页面按钮被覆盖）
+       ============================================================ */
+    .gf-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1);
+      min-width: 76px; height: 32px;
+      padding: 0 var(--space-4);
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      line-height: 1;
+      border-radius: var(--radius-btn);
+      border: 1px solid var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all var(--transition-fast);
+    }
+    .gf-btn:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+    .gf-btn:active { background: var(--color-primary-active); border-color: var(--color-primary-active); }
+    .gf-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-primary-focus); }
+    .gf-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    .gf-btn--secondary {
+      background: var(--color-bg-card);
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+    .gf-btn--secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    .gf-btn--danger {
+      background: var(--color-error);
+      border-color: var(--color-error);
+      color: var(--color-on-primary);
+    }
+    .gf-btn--danger:hover { background: var(--color-error-text); border-color: var(--color-error-text); color: var(--color-on-primary); }
+
+    /* ============================================================
+       Modal 遮罩与容器
+       ============================================================ */
+    .gf-modal-mask {
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-index-nav-popup);
+      display: flex;
+      align-items: center;          /* 上下居中，禁止用 top: 100px */
+      justify-content: center;
+      padding: var(--space-6);
+      background: var(--color-mask);
+    }
+    .gf-modal-mask[hidden] { display: none; }
+
+    .gf-modal {
+      display: flex;
+      flex-direction: column;
+      width: var(--modal-form-width);
+      max-width: calc(100vw - 48px);   /* 视口兜底，禁止溢出 */
+      max-height: calc(100vh - 48px);
+      padding: 0;                      /* 强制清零，否则分割线左右不到头 */
+      overflow: hidden;                /* 圆角裁切，滚动交给 body */
+      background: var(--color-white);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-medium);
+    }
+
+    /* 三档宽度：通过修饰类切换，禁止写死 width */
+    .gf-modal--confirm { width: var(--modal-confirm-width); }
+    .gf-modal--form    { width: var(--modal-form-width); }
+    .gf-modal--complex { width: var(--modal-complex-width); }
+
+    /* ---- 头部 ---- */
+    .gf-modal__header {
+      flex: 0 0 var(--floating-header-height);
+      height: var(--floating-header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: 0 var(--floating-content-padding);
+      margin-bottom: 0;
+      border-bottom: 1px solid var(--color-border-secondary);
+    }
+    .gf-modal__title {
+      margin: 0;
+      font-size: var(--font-size-body);
+      font-weight: 500;
+      color: var(--color-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .gf-modal__close {
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--color-text-tertiary);
+      cursor: pointer;
+      border-radius: var(--radius-btn);
+      transition: color var(--transition-fast), background var(--transition-fast);
+    }
+    .gf-modal__close:hover { color: var(--color-text); background: var(--color-border); }
+    .gf-modal__close:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-primary-focus); }
+
+    /* ---- 主体：唯一滚动区 ---- */
+    .gf-modal__body {
+      flex: 1 1 auto;
+      padding: var(--floating-content-padding);
+      overflow: auto;
+      max-height: calc(100vh - 180px);
+      max-height: calc(100dvh - 180px);
+    }
+
+    /* ---- 底部操作区 ---- */
+    .gf-modal__footer {
+      flex: 0 0 var(--floating-footer-height);
+      height: var(--floating-footer-height);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      padding: var(--space-3) var(--floating-content-padding);
+      margin-top: 0;
+      border-top: 1px solid var(--color-border-secondary);
+    }
+
+    /* ============================================================
+       表单区（业务替换点：换成真实字段）
+       ============================================================ */
+    .gf-form-field { margin-bottom: var(--space-4); }
+    .gf-form-field:last-child { margin-bottom: 0; }
+    .gf-form-field__label {
+      display: block;
+      margin-bottom: var(--space-2);
+      font-size: var(--font-size-body);
+      color: var(--color-text-secondary);
+    }
+    .gf-form-field__required { color: var(--color-error); margin-right: var(--space-1); }
+    .gf-form-field__control {
+      width: 100%; height: 32px;
+      padding: 0 var(--space-3);
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      color: var(--color-text);
+      background: var(--color-white);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-btn);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .gf-form-field__control:hover { border-color: var(--color-primary); }
+    .gf-form-field__control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-focus); }
+    .gf-form-field__control::placeholder { color: var(--color-text-quaternary); }
+
+    /* ============================================================
+       内嵌表格（复杂弹窗用）
+       ============================================================ */
+    .gf-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--font-size-body); }
+    .gf-table th {
+      padding: var(--space-3) var(--space-4);
+      text-align: left;
+      font-weight: 500;
+      color: var(--color-text-secondary);
+      background: var(--color-table-header-bg);
+      border-bottom: 1px solid var(--color-border-secondary);
+      white-space: nowrap;
+    }
+    .gf-table td {
+      padding: var(--space-3) var(--space-4);
+      color: var(--color-text);
+      border-bottom: 1px solid var(--color-border-secondary);
+    }
+    .gf-table tbody tr:hover td { background: var(--color-table-row-hover); }
+    .gf-link {
+      padding: 0;
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      color: var(--color-table-action);
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+    .gf-link:hover { color: var(--color-table-action-hover); }
+
+    /* 提示类正文 */
+    .gf-modal__text { margin: 0; color: var(--color-text-secondary); }
+    .gf-modal__text strong { color: var(--color-text); font-weight: 500; }
+  </style>
+</head>
+<body data-page-node-id="W6BO9OBHXvFd1EVFsfj8br">
+
+  <!-- ===== 演示用触发区（业务接入时删除） ===== -->
+  <div class="demo-launch" data-page-node-id="RHKCuIPQWhQ9xFAMf76Bdj">
+    <h1 data-page-node-id="8BAeUedsiDqVlOylzHZ0fI">弹窗模板 · 三档宽度</h1>
+    <div class="demo-launch__row" data-page-node-id="KjhemFHy0KiI6BWIULLoNr">
+      <button class="gf-btn gf-btn--secondary" data-modal-open="modalConfirm" data-page-node-id="wX1qxNaDHxXvMFCpCFRDUf">确认弹窗 480</button>
+      <button class="gf-btn" data-modal-open="modalForm" data-page-node-id="6AQnmU8Eig8gTAfmHu7wSy">表单弹窗 640</button>
+      <button class="gf-btn gf-btn--secondary" data-modal-open="modalComplex" data-page-node-id="wXCWoWP2KRiMnPjxESXt4F">复杂弹窗 800</button>
+    </div>
+  </div>
+
+  <!-- ===== 确认弹窗 480px：二次确认，无表单 ===== -->
+  <div class="gf-modal-mask" id="modalConfirm" hidden data-page-node-id="Di0oN3KYH2EdE1EyLHguRx">
+    <div class="gf-modal gf-modal--confirm" role="dialog" aria-modal="true" aria-labelledby="titleConfirm" data-page-node-id="0RpCK5molkDIsNY4WGsvmB">
+      <div class="gf-modal__header" data-page-node-id="JHCv6r75pbExCI6fYCrnBn">
+        <h2 class="gf-modal__title" id="titleConfirm" data-page-node-id="s9ScwFB5IpOy4n3qCltFhF">删除确认</h2>
+        <button class="gf-modal__close" data-modal-close aria-label="关闭" data-page-node-id="J7O9gDM9eTYomu0Aw9xHTZ">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" overflow="visible" data-page-node-id="BQWr3uwBO0sMROnoTz8SXk">
+            <path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" data-page-node-id="jqMANeLI4T8Mr0gAgUqFjX"/>
+          </svg>
+        </button>
+      </div>
+      <!-- 业务替换点：提示文案 -->
+      <div class="gf-modal__body" data-page-node-id="ha6wtAUWGHD6NURjMSZjrR">
+        <p class="gf-modal__text" data-page-node-id="PcTiojVfTw5Xi1tocLJ0RT">确认删除产品 <strong data-page-node-id="RSHYc7wvID1bF4J8awgS42">广发稳健增长混合 A</strong> 吗？删除后该产品的备案信息将不可恢复。</p>
+      </div>
+      <!-- 业务替换点：按钮文案与回调 -->
+      <div class="gf-modal__footer" data-page-node-id="kAGEApJIexEjBhP8OK2gH5">
+        <button class="gf-btn gf-btn--secondary" data-modal-close data-page-node-id="MTrt7rDr9Qs1ea2BpQRFjT">取消</button>
+        <button class="gf-btn gf-btn--danger" data-modal-confirm data-page-node-id="NLaclkyaqErAEUYI3AZ6jq">确认删除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 表单弹窗 640px：普通单列表单 ===== -->
+  <div class="gf-modal-mask" id="modalForm" hidden data-page-node-id="nDOMQIXFQLCJTK8v154XJi">
+    <div class="gf-modal gf-modal--form" role="dialog" aria-modal="true" aria-labelledby="titleForm" data-page-node-id="27xfKuvOwstE8QDpqk3GVD">
+      <div class="gf-modal__header" data-page-node-id="R1IUTDIj8gUbp0wyDdDrCS">
+        <h2 class="gf-modal__title" id="titleForm" data-page-node-id="v5ckRIcQMpTJFtdYuS06Ij">新增产品备案</h2>
+        <button class="gf-modal__close" data-modal-close aria-label="关闭" data-page-node-id="vXdGuwI7snxlPR3iGh36K9">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" overflow="visible" data-page-node-id="s6GCcSrOZb31ACCszZTOMi">
+            <path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" data-page-node-id="ZooV02Hfs7M4IqUf9DZxua"/>
+          </svg>
+        </button>
+      </div>
+      <!-- 业务替换点：表单字段 -->
+      <div class="gf-modal__body" data-page-node-id="yEfN1GQ2K34DHNrcsGVyo5">
+        <form id="formFiling" data-page-node-id="dQHDBcYliolXpgpyMM4IFD">
+          <div class="gf-form-field" data-page-node-id="whIFspKUHrfL6LuFqzKDE0">
+            <label class="gf-form-field__label" for="fProductName" data-page-node-id="1QJ1QwtcoOcchTj2JnesVB"><span class="gf-form-field__required" data-page-node-id="FLMwh8fB0ObmQEdwq7oyJj">*</span>产品名称</label>
+            <input class="gf-form-field__control" id="fProductName" type="text" placeholder="请输入产品全称" data-page-node-id="uC85NxYVZwWWBlPYtKxWOu">
+          </div>
+          <div class="gf-form-field" data-page-node-id="GxBMxXLnepMO2nBGtqVoIF">
+            <label class="gf-form-field__label" for="fProductCode" data-page-node-id="qfGVoKSLpzKKzGMeCl6xAE"><span class="gf-form-field__required" data-page-node-id="T6waQiUcLnGs8wKtqlImjG">*</span>产品代码</label>
+            <input class="gf-form-field__control" id="fProductCode" type="text" placeholder="请输入产品代码" data-page-node-id="fQtuQ0CVOWiKgaD7mRParw">
+          </div>
+          <div class="gf-form-field" data-page-node-id="F1BRPEMacOIuTHABMTWPC4">
+            <label class="gf-form-field__label" for="fManager" data-page-node-id="sxNjgAUNOXXMgJhtctyzWN">投资经理</label>
+            <input class="gf-form-field__control" id="fManager" type="text" placeholder="请输入投资经理姓名" data-page-node-id="LacvRfUCFz4phGh42xBa5P">
+          </div>
+        </form>
+      </div>
+      <!-- 业务替换点：提交回调 -->
+      <div class="gf-modal__footer" data-page-node-id="SmvwRqLIH3JRkWdy6C2W40">
+        <button class="gf-btn gf-btn--secondary" data-modal-close data-page-node-id="gjZrNfJEXgXrS5VWwfTcFS">取消</button>
+        <button class="gf-btn" data-modal-confirm data-page-node-id="stVuT7ApDyO1b0PuApEhzR">提交备案</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 复杂弹窗 800px：多模块 / 内嵌表格，展示滚动区 ===== -->
+  <div class="gf-modal-mask" id="modalComplex" hidden data-page-node-id="5kNggSsCP3QqSq1pdASKjE">
+    <div class="gf-modal gf-modal--complex" role="dialog" aria-modal="true" aria-labelledby="titleComplex" data-page-node-id="QKKw2B27JkgZpDXRLcyN01">
+      <div class="gf-modal__header" data-page-node-id="iorZFrs7hBTXGJQDMfoSwB">
+        <h2 class="gf-modal__title" id="titleComplex" data-page-node-id="fycoA21YWmHdE4RjALCkxw">选择关联账户</h2>
+        <button class="gf-modal__close" data-modal-close aria-label="关闭" data-page-node-id="4j1aGoNAYQDB4h8Y0V8CWh">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" overflow="visible" data-page-node-id="CNeW2ZY2VRrB1BwaXBX3H1">
+            <path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" data-page-node-id="SPLqlDJPUFEuFpHjKxAhJC"/>
+          </svg>
+        </button>
+      </div>
+      <!-- 业务替换点：列表内容 -->
+      <div class="gf-modal__body" data-page-node-id="sbZ31mWpIQhCjnZZFt3jjl">
+        <table class="gf-table" data-page-node-id="6v3opdYJgFYzSHh3ywBfNS">
+          <thead data-page-node-id="vyvU12KymRHMe8gjHvGK2I">
+            <tr data-page-node-id="dAMQzFMbdqWEoMNvVKcRH1"><th data-page-node-id="1TUcGynnXJjA8KFYbGm701">账户编号</th><th data-page-node-id="EGhA0ScRbhl8rz1nvEBXwE">账户名称</th><th data-page-node-id="YHHWniGkXCOb3fKk6Az01L">托管行</th><th data-page-node-id="dmqIqZhGGKzjuKcYrriClP">操作</th></tr>
+          </thead>
+          <tbody data-page-node-id="KtYi0UhxJCnL2dpLDDpdnr">
+            <tr data-page-node-id="8dHyijmBFAzCWf3EfAPyJ8"><td data-page-node-id="LJg4rqjAlChIDiON06JoPd">8801-0021</td><td data-page-node-id="jEv6s7ycLRBKF51MDgbZWi">广发基金专户一号</td><td data-page-node-id="TbGxESZivIJAdMBUV14JSa">中国工商银行</td><td data-page-node-id="aPZ1tzNlj7lqZ8icfzGUC5"><button class="gf-link" data-page-node-id="nLXfVmCexDgd1GNjmjuCJV">选择</button></td></tr>
+            <tr data-page-node-id="yzP2BrfLgC5p7s1ScJqDjK"><td data-page-node-id="igMKQHRZK8rVh4sQjkq4cz">8801-0022</td><td data-page-node-id="Vb3POtSUKBvr6gNr57rLaB">广发基金专户二号</td><td data-page-node-id="D5BYsVk4fVfAHELwfYxuap">中国建设银行</td><td data-page-node-id="tyjJ0gjdAmQabrD6kzeZJB"><button class="gf-link" data-page-node-id="E2at4F11thKNFcPh5YH2an">选择</button></td></tr>
+            <tr data-page-node-id="kBqwyMY2AMiPOKnFleYUCJ"><td data-page-node-id="7upwLtSqTPFnqeGPwNyJfb">8801-0023</td><td data-page-node-id="oFUEUFoFCGfCGHV4kMAuL7">广发基金专户三号</td><td data-page-node-id="OFGvn0JCycFAttBJVOV4Qu">招商银行</td><td data-page-node-id="2f57BYX0QAm0QEj9DzmIJC"><button class="gf-link" data-page-node-id="B1rSoZl4upDj5GyxXJL2Aj">选择</button></td></tr>
+            <tr data-page-node-id="LkCTDnHFedWHcuNg8EvjV8"><td data-page-node-id="rNhzOGMkCMzeNEYwEGtM9l">8801-0024</td><td data-page-node-id="aPDGVnRCWcgdW7iX0JTsWG">广发基金专户四号</td><td data-page-node-id="fAMOTQQKOoNa3a8Cn4ybFR">中国银行</td><td data-page-node-id="fee2N5ERt4LdwAclGb4Ht2"><button class="gf-link" data-page-node-id="2uJ65Ji9ZMFIaH4hdoFhXk">选择</button></td></tr>
+            <tr data-page-node-id="BbT0rzcmSdcTAKytu2jjaz"><td data-page-node-id="4fBSbP9oEHXIPBsCzvGRU5">8801-0025</td><td data-page-node-id="3XW2Z9OMDwKtsSnFQKSoxt">广发基金专户五号</td><td data-page-node-id="bncW48wgwXyRLTz04CIOtS">交通银行</td><td data-page-node-id="YvqljhgElNlW2A7sgAI3f6"><button class="gf-link" data-page-node-id="9oWcF1jECc7H2OVGM1n4kr">选择</button></td></tr>
+            <tr data-page-node-id="kFDwWHh49orypjMELuDw0l"><td data-page-node-id="7PXsHLKNLWXcWb5IRg1w8j">8801-0026</td><td data-page-node-id="aO4VJMaYu4azk6P7ONue1K">广发基金专户六号</td><td data-page-node-id="pSRXx193zU8T45zWcFRC9m">兴业银行</td><td data-page-node-id="P4trMkvtNiAL0gPBuu9gi1"><button class="gf-link" data-page-node-id="WvmqhyEYos3tWIQxAwN8Jp">选择</button></td></tr>
+            <tr data-page-node-id="GKBVkV1UvVInVbzFpGQRT8"><td data-page-node-id="iLGJTDKikBUDGd334k63YL">8801-0027</td><td data-page-node-id="K1NlFpW8CeLU3s0Qg0XpWY">广发基金专户七号</td><td data-page-node-id="bbZbhWg1dhheZmbZcIp7Te">浦发银行</td><td data-page-node-id="Pqiu2poscmAAzc8hs0ejJM"><button class="gf-link" data-page-node-id="DjuvVAd0AcHiFDIajkZV93">选择</button></td></tr>
+            <tr data-page-node-id="Tuf7oZjNubewzTuJiSk1nw"><td data-page-node-id="kFZrpn87sLomw2EeUwizVP">8801-0028</td><td data-page-node-id="HmnfXxL8xK3FXVtrr619My">广发基金专户八号</td><td data-page-node-id="duhCpJtexrd55NeajqpOt0">民生银行</td><td data-page-node-id="zoe9jjoQxDv5fyRFVOTz4r"><button class="gf-link" data-page-node-id="oUFZKei3nXZqZinImoa1kA">选择</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <!-- 业务替换点：按钮文案与回调 -->
+      <div class="gf-modal__footer" data-page-node-id="TBIkgs6tIpeG5IT7oKcTjM">
+        <button class="gf-btn gf-btn--secondary" data-modal-close data-page-node-id="Gxi7AfTCb8HhOksF5vKLju">取消</button>
+        <button class="gf-btn" data-modal-confirm data-page-node-id="zrh8rFYOMH4e72wwE5cAMg">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       弹窗开关（业务接入时替换为框架态管理，如 React open 受控）
+       ============================================================ */
+    var openMask = null;
+
+    function openModal(id) {
+      var mask = document.getElementById(id);
+      if (!mask) return;
+      mask.hidden = false;
+      openMask = mask;
+    }
+
+    function closeModal() {
+      if (openMask) openMask.hidden = true;
+      openMask = null;
+    }
+
+    /* 触发按钮 */
+    document.querySelectorAll('[data-modal-open]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openModal(btn.getAttribute('data-modal-open'));
+      });
+    });
+
+    /* 关闭：关闭图标 / 取消按钮 / 点击遮罩空白 */
+    document.querySelectorAll('[data-modal-close]').forEach(function (btn) {
+      btn.addEventListener('click', closeModal);
+    });
+    document.querySelectorAll('.gf-modal-mask').forEach(function (mask) {
+      mask.addEventListener('click', function (e) {
+        if (e.target === mask) closeModal();
+      });
+    });
+
+    /* 确认按钮：业务替换点 —— 换成真实提交逻辑 */
+    document.querySelectorAll('[data-modal-confirm]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        closeModal();
+      });
+    });
+
+    /* Esc 关闭 */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>

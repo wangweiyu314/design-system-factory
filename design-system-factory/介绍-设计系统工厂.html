@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="C1Ni0qskgnuqLCQdyhLvCI">
+<head data-page-node-id="m6MFWx68ZozQiUUOoXDOlH">
+<meta charset="UTF-8" data-page-node-id="6VUYvcGnwlQDqaqAQ2f1bK">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="eljhr2wDgbFF9HLnrzmBw9">
+<title>设计系统工厂 · 使用与功能说明</title>
+<style>
+  :root {
+    --ink-1: #1F2329;
+    --ink-2: #4E5969;
+    --ink-3: #86909C;
+    --line: #E5E6EB;
+    --line-soft: #F2F3F5;
+    --bg: #FFFFFF;
+    --bg-soft: #F7F8FA;
+    --accent: #2A6CDD;
+    --accent-soft: #EAF0FC;
+    --ok: #2CAA41;
+    --warn: #E97D30;
+    --danger: #F5222D;
+    --radius: 8px;
+    --mono: 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-soft);
+    color: var(--ink-1);
+    font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-size: 14px;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 80px; }
+
+  /* ---------- 头部 ---------- */
+  header {
+    background: linear-gradient(135deg, #1B2C4E 0%, #2A4A8A 55%, #2A6CDD 100%);
+    color: #fff;
+    padding: 56px 0 48px;
+    margin-bottom: 40px;
+  }
+  header .wrap { padding-bottom: 0; }
+  .eyebrow {
+    font-size: 12px; letter-spacing: .12em; text-transform: uppercase;
+    color: rgba(255,255,255,.65); margin-bottom: 12px;
+  }
+  h1 { margin: 0 0 14px; font-size: 34px; line-height: 1.3; font-weight: 600; letter-spacing: -.01em; }
+  .lede { margin: 0; font-size: 16px; color: rgba(255,255,255,.86); max-width: 720px; }
+  .meta { margin-top: 24px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22);
+    padding: 4px 12px; border-radius: 999px; font-size: 12px; color: #fff;
+  }
+
+  /* ---------- 区块 ---------- */
+  section {
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 28px 32px; margin-bottom: 20px;
+  }
+  h2 {
+    margin: 0 0 6px; font-size: 20px; font-weight: 600;
+    display: flex; align-items: baseline; gap: 10px;
+  }
+  h2 .num {
+    font-size: 13px; font-weight: 600; color: var(--accent);
+    background: var(--accent-soft); border-radius: 4px;
+    padding: 2px 8px; flex: none;
+  }
+  .sub { margin: 0 0 20px; color: var(--ink-3); font-size: 13px; }
+  h3 { margin: 24px 0 10px; font-size: 15px; font-weight: 600; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px; padding-left: 22px; }
+  li { margin-bottom: 6px; }
+  code {
+    font-family: var(--mono); font-size: 12.5px;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    padding: 1px 5px; border-radius: 4px; color: var(--ink-1);
+  }
+  strong { font-weight: 600; }
+
+  /* ---------- 痛点卡片 ---------- */
+  .grid { display: grid; gap: 14px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  @media (max-width: 760px) { .g2, .g3 { grid-template-columns: 1fr; } }
+
+  .card {
+    border: 1px solid var(--line); border-radius: 6px; padding: 16px 18px;
+    background: var(--bg);
+  }
+  .card .t { font-weight: 600; margin-bottom: 6px; font-size: 14px; }
+  .card .d { color: var(--ink-2); font-size: 13px; line-height: 1.65; }
+  .card.accent { border-color: var(--accent); background: var(--accent-soft); }
+  .card.soft { background: var(--bg-soft); border-color: var(--line-soft); }
+
+  /* ---------- 对比 ---------- */
+  .vs { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 760px) { .vs { grid-template-columns: 1fr; } }
+  .vs .bad .t { color: var(--danger); }
+  .vs .good .t { color: var(--ok); }
+
+  /* ---------- 流程 ---------- */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .step { display: grid; grid-template-columns: 40px 1fr; gap: 14px; }
+  .step .dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--accent); color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 600; margin-top: 2px;
+  }
+  .step .line { grid-column: 1; justify-self: center; width: 1px; background: var(--line); height: 100%; min-height: 16px; }
+  .step .body { padding-bottom: 18px; }
+  .step .body .t { font-weight: 600; margin-bottom: 3px; }
+  .step .body .d { color: var(--ink-2); font-size: 13px; }
+  .step:last-child .line { display: none; }
+  .step.gate .dot { background: var(--warn); }
+
+  /* ---------- 表格 ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 4px 0 8px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line-soft); vertical-align: top; }
+  th { background: var(--bg-soft); font-weight: 600; color: var(--ink-2); font-size: 12.5px; }
+  tbody tr:last-child td { border-bottom: none; }
+  td code { font-size: 12px; }
+
+  /* ---------- 代码块 ---------- */
+  pre {
+    background: #1B2C4E; color: #E5E9F0; border-radius: 6px;
+    padding: 16px 18px; overflow-x: auto; margin: 10px 0 14px;
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.75;
+  }
+  pre .c { color: #7A8AA8; }
+  pre .k { color: #79B8FF; }
+
+  /* ---------- 提示 ---------- */
+  .note {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 12px 16px; border-radius: 0 6px 6px 0; font-size: 13px;
+    color: var(--ink-2); margin: 14px 0;
+  }
+  .note.warn { border-left-color: var(--warn); background: #FDF3EC; }
+  .note b { color: var(--ink-1); }
+
+  /* ---------- 目录树 ---------- */
+  .tree {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.9;
+    background: var(--bg-soft); border: 1px solid var(--line-soft);
+    border-radius: 6px; padding: 16px 20px; color: var(--ink-2);
+    white-space: pre; overflow-x: auto;
+  }
+  .tree b { color: var(--ink-1); font-weight: 600; }
+
+  footer { text-align: center; color: var(--ink-3); font-size: 12.5px; padding-top: 8px; }
+
+  @media print {
+    body { background: #fff; }
+    header { background: #1B2C4E !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    section { break-inside: avoid; border-color: #ccc; }
+  }
+</style>
+</head>
+<body data-page-node-id="xRPM4C5hr0x4aZTCXA0hoM">
+
+<header data-page-node-id="VDZqLUxe0dKqEHspn8vloV">
+  <div class="wrap" data-page-node-id="vXPOMbC8J0FGBYYTA3m6jY">
+    <div class="eyebrow" data-page-node-id="jenGIxSaZWFEpp5CeGe8ck">Design System Factory · v1.0</div>
+    <h1 data-page-node-id="TK6df0SuMRsokfGFvnY1P2">设计系统工厂</h1>
+    <p class="lede" data-page-node-id="ZlpugoSKQMtVOw5LGkJRVc">
+      给一套 Figma 设计规范和几个线上页面地址，产出一套可交付的中后台设计系统技能包：
+      规范文档 + HTML 模板 + Token 校验器 + 页面生成器 + 提交门禁。
+    </p>
+    <div class="meta" data-page-node-id="b50z7bBjkijp7srEidR3y8">
+      <span class="chip" data-page-node-id="Y2UqnSgxL8KbXKaapz1fyJ">输入：Figma + 线上页面</span>
+      <span class="chip" data-page-node-id="RPTccJVcx0KM1rkrbg41KK">产出：同构技能包</span>
+      <span class="chip" data-page-node-id="DL5sadbQSBPc6nsEOsjPSl">含 3 个可执行脚本</span>
+      <span class="chip" data-page-node-id="2JyjogjiSOLb9XUI2TwdPS">2026-09-09</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap" data-page-node-id="ZW4onAY885ss5CsrhEG3k2">
+
+  <!-- 1 -->
+  <section data-page-node-id="jaDcSZAjsaCoRH3KYFTXu7">
+    <h2 data-page-node-id="WgvdEut6Bss7r9z3jBtkuG"><span class="num" data-page-node-id="HUMItbuz0e0999pDljsFKX">01</span>它是干什么的</h2>
+    <p class="sub" data-page-node-id="Qgvs2ln6HGS4cgrJjzLnyO">一句话：把「建一套设计系统」这件事，从手工作坊变成有流程、有校验、可复现的工程。</p>
+
+    <p data-page-node-id="TrD0Moc5HHW5XnFrdoVBDK">
+      过去建一套设计系统技能包，要人工翻设计稿抄数值、对着线上页面核实现、手写二十份规范文档、
+      再做模板和校验脚本。整个过程没人知道抄错了没有——因为设计稿和规范里两个数「看起来都合理」。
+    </p>
+    <p data-page-node-id="3aK0sw4rD37utuiZXo0Nlm">
+      这个工厂把流程固化成五阶段，把最容易出错的三件事交给脚本：
+      <strong data-page-node-id="DGeapVjYLzXjCCIIfM8rAf">线上取值怎么拿</strong>、<strong data-page-node-id="u6G5pwBpGglJBem5qyy8kC">候选值怎么聚</strong>、<strong data-page-node-id="I8WPWDnLphqMxgAnaFKVdA">前缀和规范骨架怎么建</strong>。
+      剩下的判断——哪个是主色、哪边是意图源——必须留给人。
+    </p>
+
+    <div class="note" data-page-node-id="rPtb0UjNAdO5uRwGZB3KHI">
+      <b data-page-node-id="wvHWKY56EqASt4X6AwfztB">关键立场：不生搬硬套。</b>
+      标杆页、强约束清单、组件清单全部由对方系统的实际采集结果生成，
+      不复制任何既有系统的数值与规则。抄来的约束在新系统没验证过，等于没有。
+    </div>
+  </section>
+
+  <!-- 2 -->
+  <section data-page-node-id="5eg8XaiEwAjRD3mZPIpKh4">
+    <h2 data-page-node-id="mkHB8mO8FytJopdvWUn79b"><span class="num" data-page-node-id="edo3pMPhiWJNi7cjEx8msd">02</span>解决什么问题</h2>
+    <p class="sub" data-page-node-id="707Jr38UHhDQEAFJdbBmoa">三个真实存在的卡点，以及现在怎么处理。</p>
+
+    <div class="grid g3" data-page-node-id="H6vk8WyEzV1AGkGbx364UQ">
+      <div class="card" data-page-node-id="zuycRlb0eGp60VVtDuCRkU">
+        <div class="t" data-page-node-id="Ra7upG3pQ447oYYEvpGh7T">线上页面抓不到</div>
+        <div class="d" data-page-node-id="5R7myFx4NhYap6tdekS5Dx">中后台基本都在内网、需要登录，自动化工具打不开，只能靠人肉截图描述。</div>
+      </div>
+      <div class="card" data-page-node-id="33GSBnTbmQw6E0Pe7fkT2c">
+        <div class="t" data-page-node-id="TJ3Y9PgKM7aZNGAF5KTtSS">取值抄错没人知道</div>
+        <div class="d" data-page-node-id="wYsTyLYt4vfOYPcVAdhEwV">设计稿到规范是人工转录。抄错不会报错，只会悄悄变成规范的一部分，几个月后才暴露。</div>
+      </div>
+      <div class="card" data-page-node-id="awWEcBbwdGENS673mK8Jmp">
+        <div class="t" data-page-node-id="fVktHgb9AyLmvARkSAlM2f">规范写完落不了地</div>
+        <div class="d" data-page-node-id="tfiUTtFjKm2dE6QVySsmPr">文档是一套、代码是另一套。没人记得跑校验，规范很快就和实现对不上。</div>
+      </div>
+    </div>
+
+    <h3 data-page-node-id="T8Ne9isX01nXs0UmEvddfK">对应做法</h3>
+    <div class="vs" data-page-node-id="GSQw21VRGj9IZ9dwf8B7pl">
+      <div class="card soft bad" data-page-node-id="7qtemXymPzvbdmDsyXjqNd">
+        <div class="t" data-page-node-id="eccL1L28Y2WzZ1UzqObLbP">× 过去</div>
+        <div class="d" data-page-node-id="JQtifwWu8oVNOkIN9wDOhW">人肉看截图描述颜色 → 凭感觉给主色命名 → 规范写完就结束，没有校验环节。</div>
+      </div>
+      <div class="card soft good" data-page-node-id="Qv4URPyboGBpBfQIoLzHm9">
+        <div class="t" data-page-node-id="A3tlzV8npvxzQZAFxdHYNf">✓ 现在</div>
+        <div class="d" data-page-node-id="DPE1RihFBaxbb0OArPCQTK">浏览器采集真实 computed style → 频次聚合出候选、语义由人确认 → 校验器双向比对 + 提交门禁强制生效。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 -->
+  <section data-page-node-id="xzjBJj9I87QS38F56QE2g3">
+    <h2 data-page-node-id="hdiIxw6TNx43FTHiVhqh6o"><span class="num" data-page-node-id="kH0tU9mUsOPRhVp723J0IU">03</span>五阶段流程</h2>
+    <p class="sub" data-page-node-id="bcFaPkV6EALolnE8GS2qnk">顺序不能乱，第 ③ 步不能跳过、不能由 AI 代劳。</p>
+
+    <div class="flow" data-page-node-id="Yn5m2OXLrSIZdOmgMG7zXT">
+      <div class="step" data-page-node-id="xwpTD3bAUCjqpEXnebYMrm">
+        <div class="dot" data-page-node-id="wpz88Ocb3oZN0vWhmAg5qD">1</div>
+        <div class="body" data-page-node-id="RqQbD7F3SeZUCDNpvh9RDo">
+          <div class="t" data-page-node-id="GgSkcuU3pZoxCl8VMm7EN7">采集 · Intake</div>
+          <div class="d" data-page-node-id="55fsJeAD1X8BKQVvygzhOZ">Figma 变量（MCP 或导出文件）+ 线上页面 computed style。两条腿都要，缺一条就只能描述现状或空谈意图。</div>
+        </div>
+        <div class="line" data-page-node-id="vdCzMwrSiecXGuCprO2its"></div>
+      </div>
+      <div class="step" data-page-node-id="NYjmAITdhclZFuxnv5FWVU">
+        <div class="dot" data-page-node-id="pHRUSOGxwEZoLAbGt11CIy">2</div>
+        <div class="body" data-page-node-id="6PyaNk17c7QzkZS8ZcG7WY">
+          <div class="t" data-page-node-id="8xIBLppK23i5SsQ41zmqER">挖掘 · Mining</div>
+          <div class="d" data-page-node-id="sKUs1IDNgJL9fsqLtoL2QV">多页合并统计，产出 Token 候选、页面结构特征、设计稿↔线上差异（F1/F2）与存疑项。</div>
+        </div>
+        <div class="line" data-page-node-id="BZZJzTSaTw2roedVlp168V"></div>
+      </div>
+      <div class="step gate" data-page-node-id="4oYn3v874cpRRUi1wBPgEE">
+        <div class="dot" data-page-node-id="8tAzFE6FpnE6eq2m2FhuLo">3</div>
+        <div class="body" data-page-node-id="cBunV1q2ynV6RwYX7j784G">
+          <div class="t" data-page-node-id="ViA2xnk2BPgLtE1geOCdo6">裁决 · Adjudication　<span style="color:var(--warn);font-size:12px;" data-page-node-id="U0v3xeCphyDlBK5lqvCnl7">← 人工，不可跳过</span></div>
+          <div class="d" data-page-node-id="JE1B9zW61gGMJssaihmWVD">机器能算出「#2A6CDD 出现了 47 次」，算不出「这是品牌主色」。语义命名猜错的代价远大于猜对的收益——一个错的主色会顺着模板扩散到几十个页面。</div>
+        </div>
+        <div class="line" data-page-node-id="67XuHI16i7HdBRxgR8QJpk"></div>
+      </div>
+      <div class="step" data-page-node-id="S7FrGGBUlfBoFpQH40gb5Q">
+        <div class="dot" data-page-node-id="7M30tEa5E0pf5DwpiTmNev">4</div>
+        <div class="body" data-page-node-id="ZBEF82MhhX3fOaGe6kTLtM">
+          <div class="t" data-page-node-id="YdOGBGW8rLERlhAtdSAGMk">生成 · Generation</div>
+          <div class="d" data-page-node-id="A9OuV033n755IUfKnadGuj">建包（引擎复制 + 类名前缀替换 + 系统名参数化）→ 填规范 → 补组件/页面文档 → 出标杆页。</div>
+        </div>
+        <div class="line" data-page-node-id="8umo64Akr3b8vKiY7E0a0Z"></div>
+      </div>
+      <div class="step" data-page-node-id="2hFUrKY7uddWGenuFNeVkk">
+        <div class="dot" data-page-node-id="7IGEk4U0Gem9zj0M5eCWJU">5</div>
+        <div class="body" data-page-node-id="Ur0yxK6pHOXyCwjIG7dVLD">
+          <div class="t" data-page-node-id="XIPE8jZ3u0Zwi25baqPgYL">校验 · Verify</div>
+          <div class="d" data-page-node-id="bo8pAFk0IvKnvVYlKe0POA">双向 Token 校验退出码必须为 0；用 git 的仓库再装提交门禁，让约束自动生效而不是靠自觉。</div>
+        </div>
+        <div class="line" data-page-node-id="xXURVDAWUva4XJJhNKQHQ7"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 -->
+  <section data-page-node-id="G3twoEkzYfVxBHAj2K52AZ">
+    <h2 data-page-node-id="51Lv4ARcrPyegIxhDdrDnR"><span class="num" data-page-node-id="Pm3VUWkCWTSyLr8sqEyQti">04</span>三个脚本（功能说明）</h2>
+    <p class="sub" data-page-node-id="6tn0izT5MkmJY5F7JnPDcX">工厂里真正干活的部分，都经过实测。</p>
+
+    <div class="grid g3" data-page-node-id="ciitWVTlT5qWRTumqACope">
+      <div class="card accent" data-page-node-id="cjXGykbFtT5FrojQAIktB9">
+        <div class="t" data-page-node-id="La2BGuNQjm2Y831vJFEjF7">collect-from-browser.js</div>
+        <div class="d" data-page-node-id="mi6lFjfmJ4ByV0EH5U656v">
+          <strong data-page-node-id="lDbjys1IDxFhwTsRPR2AMQ">解决内网需登录。</strong>发给能打开页面的人，在控制台粘贴运行，
+          自动导出 computed style JSON（颜色/字号/间距/圆角/阴影/关键尺寸/结构特征）。
+          只读 DOM，不发请求、不改页面、不碰登录态。
+        </div>
+      </div>
+      <div class="card accent" data-page-node-id="c1h5l6dRlH1kKhZ06vCWxc">
+        <div class="t" data-page-node-id="Hg334Nu9Hz8urf0IVM0aPQ">mine-tokens.js</div>
+        <div class="d" data-page-node-id="PUHoqUYm9wl3mhiESiq002">
+          <strong data-page-node-id="6ximvPRkboR4NiUc2TrcsQ">取值挖掘。</strong>多页采集合并统计，输出 Token 候选、网格拟合覆盖率、
+          页面类型推断，以及设计稿↔线上差异 F1/F2。只给候选和存疑，不做命名裁决。
+        </div>
+      </div>
+      <div class="card accent" data-page-node-id="QQdclHDySCWeXCCG1Etsj2">
+        <div class="t" data-page-node-id="kFYZNR0yBBAjqYgcpCvuT2">init-package.js</div>
+        <div class="d" data-page-node-id="WFrE6MGomExJTo13IZeKZQ">
+          <strong data-page-node-id="Mgjej0PEkobIoukSLosEJa">一键建包。</strong>复制引擎（4 个 JS + 11 套 HTML 模板 + 2 份说明），
+          全量替换 CSS 类名前缀、系统名、环境变量名，并生成规范文档骨架。
+        </div>
+      </div>
+    </div>
+
+    <h3 data-page-node-id="52iVD6PGmihWfKupfaOCsk">实测数据</h3>
+    <table data-page-node-id="OwBs9GDE2I4q9xIgGFzvZL">
+      <thead data-page-node-id="ltEMTB6UirdODCa0tf8OkV"><tr data-page-node-id="wHbBUtCAGyQyzyOVgMeb1E"><th data-page-node-id="1XjIq6gUiI8U76Gm0TCmQX">验证项</th><th data-page-node-id="se2LrIjfN8wovV3FUM4w4c">结果</th></tr></thead>
+      <tbody data-page-node-id="SKfYGXDoKdpWGudESaxt9X">
+        <tr data-page-node-id="tljQcyT7lMZOk7GIiWDQrz"><td data-page-node-id="6zwCs7Up4ABbV2GfBiMQCl">建包替换完整性</td><td data-page-node-id="jtwoJZPwlczmzALCMS4dXm">18 个文件、16 个做了替换，旧前缀与品牌词<strong data-page-node-id="D937ojEsWNaGmH5HgXvwiL">零残留</strong>，新前缀命中 1121 处</td></tr>
+        <tr data-page-node-id="hMIkplZcFYMAX2BceE6pxM"><td data-page-node-id="uhqzHFz47fj3UoF9oyAIlP">空骨架校验基线</td><td data-page-node-id="HOVJFvhk5tdsMQw2VDXaok">E1/E2/E3 = 0，W1 = 442（=「规范还没填」，正确信号）</td></tr>
+        <tr data-page-node-id="MIjYqeo8IbhR1rwRBjkasQ"><td data-page-node-id="kX2EhNdscID7baWlrxfZfA">回灌后闭环</td><td data-page-node-id="QgwZmOqK6mGpWVjMFxI6vJ">110 个 Token，E1/E2/E3/W1 <strong data-page-node-id="hnqv4HA2O13JogNgvJu2DF">全 0，退出码 0</strong></td></tr>
+        <tr data-page-node-id="KDM2Q0WBa3jHZ3OJfK9A3D"><td data-page-node-id="Y2pZ3hDC8ogIi29KF9NSZp">提交门禁</td><td data-page-node-id="YxMGK1uvjENEwHkXG47EGy">临时 git 仓库实测 install/status 正常，环境变量随前缀自动改名</td></tr>
+        <tr data-page-node-id="vV809BMJ8dK1tykeD3WKAx"><td data-page-node-id="iDpJSN4DgEd1SxYDDFD6YR">页面生成器</td><td data-page-node-id="tXDo2lycT2e6hRnYOZjlRb"><code data-page-node-id="xp8Hex0GWDEdGP6l8rgHC5">--type=list</code> 正常产出 949 行页面</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- 5 -->
+  <section data-page-node-id="NeSrgeta8Ce29YDKt1TzLs">
+    <h2 data-page-node-id="15wFL71ffD4iJS4EZyL881"><span class="num" data-page-node-id="5GjlryVrtyrpQZ4DGHFqAA">05</span>输入输出对照</h2>
+    <p class="sub" data-page-node-id="oNW1BgtidnSskoMa4yXr6c">你要准备什么，最后拿到什么。</p>
+
+    <table data-page-node-id="xq8ieELMuPwHAHbfW1IWpU">
+      <thead data-page-node-id="TbSoWfFYBH7VZV05FJxqFV"><tr data-page-node-id="c3OgLT11zmRZW68uuzsTTL"><th style="width:16%" data-page-node-id="itGGyGXWJcU94YFI4A6124">环节</th><th style="width:42%" data-page-node-id="63DfT2Nder8W2gHEYim2co">输入</th><th data-page-node-id="tRYijgBiLpA7jbEBPaaAza">产出</th></tr></thead>
+      <tbody data-page-node-id="cyIeiZ7YXKGgiy7bE22ezz">
+        <tr data-page-node-id="ocdNeXHPmkHdaTAWZkEBH4">
+          <td data-page-node-id="DhiJdSZvb3lGzTjCtK1h0V">设计稿</td>
+          <td data-page-node-id="nY7HzUaYjHu9R5RXGfLi4Y">Figma 文件（MCP 接入）／变量导出 JSON·CSV／截图</td>
+          <td data-page-node-id="fg5oaoBrBkbwrKTjZSE08D">设计意图值，用于与线上实现做双向核对</td>
+        </tr>
+        <tr data-page-node-id="o5RwcKA0A2Ngr1fE7P2WG4">
+          <td data-page-node-id="RDnKGcEnMPX2BF7TuTcazq">线上页面</td>
+          <td data-page-node-id="BY0fij3HUDNml0yIZ1BNq4">页面地址（内网需登录则由同事跑采集脚本）</td>
+          <td data-page-node-id="kNxWr2tQlgO2uGS8a34VTJ"><code data-page-node-id="QwmpJMVqBxNUwu6oEVGS22">*-styles.json</code>：真实渲染取值与结构特征</td>
+        </tr>
+        <tr data-page-node-id="lpLOyLnDdgFXa0LFuGZGMd">
+          <td data-page-node-id="8ed7mlOb1JXf0y8GCcI1uJ">挖掘</td>
+          <td data-page-node-id="R7TyOFLoNLRbrlWLvH55X3">上述两份 + <code data-page-node-id="fc98jgKFlw2s7itfGP32DU">--grid</code> 网格基数</td>
+          <td data-page-node-id="oKSgApX08bAKDsfbH7xezu"><code data-page-node-id="trwbivA8pIPJjdsTC3l2QN">mining-report.md</code> + <code data-page-node-id="l9PyGZAKuyJKgB446kwH70">tokens.draft.md</code></td>
+        </tr>
+        <tr data-page-node-id="kAgJ1PZ1njM0iHA5Q7Tnbb">
+          <td data-page-node-id="BzqkuHJEEuF5EFDbqNbGF4">裁决</td>
+          <td data-page-node-id="8HdjAaj9y0bysb6VIhKL8j">人工确认语义命名与意图源</td>
+          <td data-page-node-id="1lbyzfC7fJ2sLCzHV5SVqK">定稿的 Token 表</td>
+        </tr>
+        <tr data-page-node-id="w6dSUcR0HWMPcgGwg5gI8A">
+          <td data-page-node-id="IyFAZEpTORApdhdmH5KQee">建包</td>
+          <td data-page-node-id="9g8Vxu551gnQCv3GnTFHWZ">系统名 + 类名前缀</td>
+          <td data-page-node-id="cTDQVTtLazUhGPmGvyavBE">完整技能包目录（见下节）</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="note warn" data-page-node-id="Fq2Je4diGlfhkxdOsO72Kq">
+      <b data-page-node-id="aEXvrLyiMNgAZCxYBVGuzA">质量取决于输入。</b>
+      线上采集<strong data-page-node-id="XwOqvuaDaESX9IUedlvFGS">至少 3 个不同页面</strong>（列表/表单/详情各一），单页噪声极大。
+      状态色（hover/active/disabled）默认态采不到，需在页面上手动触发后再采一次。
+    </div>
+  </section>
+
+  <!-- 6 -->
+  <section data-page-node-id="yrExvxbEtc8N6kEGi5vBRr">
+    <h2 data-page-node-id="MTt0pWV5NUksEY6xXdRT3r"><span class="num" data-page-node-id="F8zoeaHkZ83W2jL712nu33">06</span>五分钟上手</h2>
+    <p class="sub" data-page-node-id="mXP70HQq2nIbkCF2AeFUKm">复制即可跑，路径按实际环境调整。</p>
+
+<pre data-page-node-id="7qQvV9sKgIFHR6sGQFF4Op"><span class="c" data-page-node-id="t6pPSBiAXyrXRfyTREZRy1"># 0. 环境（版本目录带 -2 后缀，写错会 no such file）</span>
+NODE=/Users/&lt;你&gt;/.workbuddy-ai/binaries/node/versions/22.22.2-2/bin/node
+FACTORY=/path/to/design-system-factory
+
+<span class="c" data-page-node-id="z09dQgvXxGFA9Y0Dh266Kc"># 1. 挖掘：线上采集 + 设计稿导出 → Token 候选与差异</span>
+$NODE $FACTORY/scripts/mine-tokens.js \
+  --online=list-styles.json,form-styles.json,detail-styles.json \
+  --figma=figma-vars.json \
+  --out=mining-report.md --emit-tokens=tokens.draft.md
+
+<span class="c" data-page-node-id="VpLRKvQfH7S2AltQRl0cvz"># 2. 建包：引擎复制 + 类名前缀替换 + 文档骨架</span>
+$NODE $FACTORY/scripts/init-package.js \
+  --name=某某资管平台 --prefix=am --out=./am-design-specs
+
+<span class="c" data-page-node-id="eDl21NgXbAtTotGoS4oBKL"># 3. 填规范（人工）：先写 tokens.md，再回灌各模板 :root</span>
+<span class="c" data-page-node-id="TdZQnT98G7oMHSngeDKGXV">#    顺序反了必然双源漂移</span>
+
+<span class="c" data-page-node-id="63uV3zEwhJirES4xCAa6iq"># 4. 校验：退出码必须是 0</span>
+$NODE am-design-specs/scripts/check-tokens.js . --strict</pre>
+
+    <div class="note" data-page-node-id="aweugMAlqeTkZetJOkVinE">
+      <b data-page-node-id="TUCDqhaIEUqmptNYed5oDy">第 3 步没有捷径。</b>
+      候选值必须经设计师确认才能定稿。草稿里的 Token 名是 <code data-page-node-id="rHrRT62i4Qbkk43UFmZClw">--color-candidate-N</code> 这类占位名，
+      转正时要逐个改成语义名——占位名进了规范，等于给全库埋一颗叫 candidate 的雷。
+    </div>
+  </section>
+
+  <!-- 7 -->
+  <section data-page-node-id="KxfWd20mjX1HOeXysouw19">
+    <h2 data-page-node-id="DvQEUCvaQlfxTSdMD2DTbW"><span class="num" data-page-node-id="5Uv73zgFmFUUEinR6QRnwr">07</span>产出的包里有什么</h2>
+    <p class="sub" data-page-node-id="2Mi1vjn7vM7eJjm4s0Qwx5">和既有设计系统包同构，但数值、页面类型、约束都来自你这套系统。</p>
+
+    <div class="tree" data-page-node-id="W2lqDLYpWp8fxvLjA771Ww"><b data-page-node-id="tkiiIBhJ33xHk22wvqBcAt">&lt;prefix&gt;-design-specs/</b>
+├── SKILL.md               包内入口（文档路由 + 强约束清单）
+├── foundation/
+│   ├── tokens.md          <b data-page-node-id="VcpguhFUlv4w2sOj3ZjJbW">取值唯一来源</b>
+│   └── design-sync.md     设计稿 ↔ 规范映射与同步流程
+├── components/            只写实际存在的组件
+├── pages/                 只写实际存在的页面类型
+├── examples/              标杆页
+└── scripts/
+    ├── check-tokens.js        Token 双向校验
+    ├── check-design-sync.js   设计稿 ↔ 规范核对（抓转录误差）
+    ├── new-page.js            一键页面生成器
+    ├── install-hooks.js       提交门禁（不合规不让提交）
+    └── &lt;分类&gt;/*.html          11 套已验证模板</div>
+
+    <h3 data-page-node-id="mMTjTy0OaLqtWhOYDql18Z">五项校验到底查什么</h3>
+    <table data-page-node-id="0apou52DgYHaCeEjMD8SMZ">
+      <thead data-page-node-id="BwFg6GNC8Yn5XzyoXufLpE"><tr data-page-node-id="PeGh4FQKkBB4wDCE7ABYca"><th style="width:22%" data-page-node-id="SmsjrxWuTJGUEepSS1Kt2I">项</th><th data-page-node-id="kEae1CFEQx5L7jTmGT41al">含义</th></tr></thead>
+      <tbody data-page-node-id="MLpURTyFBAlgNim79dnjnn">
+        <tr data-page-node-id="dbAZFVxD9yN6HTCFoZsp0Q"><td data-page-node-id="HlH7l9KSHT67ruclSVK9Fp"><code data-page-node-id="GkYq7mKsBiFH6KteBrt9E5">E1</code> 硬编码</td><td data-page-node-id="DEAjW4QTEZJcD2GYAAfxCm">正文出现未在 <code data-page-node-id="Nv0cF2cdIXTgbTMrGFNXXx">:root</code> 声明的色值字面量</td></tr>
+        <tr data-page-node-id="2aAgMPy5ibW0HcFEgNyONp"><td data-page-node-id="tsMQCCPE1gM58gA9bY8WjO"><code data-page-node-id="lqiStOA61bWGwxzMb2GYNB">E2</code> 取值漂移</td><td data-page-node-id="HEPHfe3jpnLOn0FMCP8suI">文件 <code data-page-node-id="f37zMUDZcNwqxUytGn5Jho">:root</code> 定义与规范不一致（规范 → 交付物）</td></tr>
+        <tr data-page-node-id="fug7IChBFjUD9gbYMkFt4Z"><td data-page-node-id="jc0kRXxzrnwi35yRROX1BK"><code data-page-node-id="cl934y4NspaIKffHGPAxfk">E3</code> 未定义引用</td><td data-page-node-id="jSxkZlXLPWd1u32OCnfOTm">用了 <code data-page-node-id="OcxvO960gdbqBEhuWWDTjo">var(--x)</code> 但本文件没定义，引用即失效</td></tr>
+        <tr data-page-node-id="vewHQnd9D7VyvZAo9wBQgg"><td data-page-node-id="4IEsejvFmMj8wj99inRpIX"><code data-page-node-id="BuVB6subJst9G90tvGTy9m">W1</code> 规范未收编</td><td data-page-node-id="usarVUY4v4H5yIUMGPv6rz">交付物在定义和使用，规范里却没有（交付物 → 规范）</td></tr>
+        <tr data-page-node-id="wCZokLeDGycsPIN9H3l9Y0"><td data-page-node-id="CVrDkNQb9RoC5eA8Kroc87"><code data-page-node-id="05z3vfnpvAdl7eUlXYjQoQ">I1</code> 规范未落地</td><td data-page-node-id="v8ALAhESLRwpoT9duIkIIy">规范定义了但全库零使用，用于清理废 Token</td></tr>
+      </tbody>
+    </table>
+
+    <div class="note" data-page-node-id="pWYCTbIdfqIXp7632rC1vj">
+      <b data-page-node-id="hspooT4A2x6C2Allh2WoGi">只做单向校验不算数。</b>
+      只查「交付物有没有按规范写」，会漏掉「规范没收编」的私有 Token——
+      这类 Token 曾悄悄长到 58 个才被发现：模板里在用，规范里没有，谁也不知道该听谁的。
+    </div>
+  </section>
+
+  <!-- 8 -->
+  <section data-page-node-id="AAUfWNMrtlE22pLPbLWczj">
+    <h2 data-page-node-id="0j5SqOS81HTSC4WvlBpvQe"><span class="num" data-page-node-id="IecyJnpDOF3QF7ZO5mwBBo">08</span>它不做什么</h2>
+    <p class="sub" data-page-node-id="hA6O4LScv7e4ylwnMWcqi0">边界说清楚，比吹能力有用。</p>
+
+    <div class="grid g2" data-page-node-id="oIkv5GkwXwDHfnDNBi86La">
+      <div class="card" data-page-node-id="rUnMmL0LakgVVPem9CkURb">
+        <div class="t" data-page-node-id="F5cBSlryo1tA8y0Dj0COr9">不裁决语义命名</div>
+        <div class="d" data-page-node-id="NxLQ57mnwbuZ5YCdL6s4qg">主色、成功、警告、错误这些语义必须有设计师确认。脚本只给频次排序。</div>
+      </div>
+      <div class="card" data-page-node-id="aFeceRFEYKeHtr0Gq8z2J1">
+        <div class="t" data-page-node-id="TEHNaLlOlylBiNDqLzwlsO">不代劳登录态</div>
+        <div class="d" data-page-node-id="6cZjBh7xG2UY3O2xaWWVlt">内网页面不去硬闯。改由能打开页面的人跑采集脚本，交回 JSON。</div>
+      </div>
+      <div class="card" data-page-node-id="Ac7U3WmAw66RoEBDjlIgmc">
+        <div class="t" data-page-node-id="aXFAMlFjZwgF1oCzkFAKrr">不生成业务文案</div>
+        <div class="d" data-page-node-id="2DZcrznPE1dggBOZDKKo9h">标杆页只出骨架与规范样式，业务字段、数据、提交逻辑要逐项替换。</div>
+      </div>
+      <div class="card" data-page-node-id="KiijyagXfiVtB2ONAax17D">
+        <div class="t" data-page-node-id="xbkQ1lEOp4iNnkz5QKfZIJ">不预设页面类型</div>
+        <div class="d" data-page-node-id="OGwKCT4tbgAT65YwnVcjWp">结构特征信号为 0 的页面类型不建文档，避免同事照着做一个系统里根本没有的页面。</div>
+      </div>
+    </div>
+
+    <h3 data-page-node-id="tCetJJ5Mua1HOxgWI7SsSZ">常见问题</h3>
+    <table data-page-node-id="PaZo1ISAqUaY9SATGHwU4P">
+      <thead data-page-node-id="tk82GJDtrdbkxSZ9R7uzaZ"><tr data-page-node-id="keEOaBfDnAeP7CjsXGgRZv"><th style="width:32%" data-page-node-id="3msjaAjnDmpDhhAFccdQef">问</th><th data-page-node-id="NlZBtWwNl7BpNE4LZ2jfnB">答</th></tr></thead>
+      <tbody data-page-node-id="EUhpcZDzQ6VMEtUshM8rv4">
+        <tr data-page-node-id="wHrXvFjKqliHxuys5clhwl"><td data-page-node-id="SH7CUzvsHujfT7m6EUrwbo">一定要有 Figma 吗？</td><td data-page-node-id="Fho2BprFW6jYZ8ps7Tyzxm">不一定。但只有线上采集时，规范描述的是「现状」而非「意图」，历史遗留脏值会被洗白成标准。</td></tr>
+        <tr data-page-node-id="7b2Xg1nJ8JH9sSQIqMS6dB"><td data-page-node-id="YWCasDX77QRqrwDgfdaJez">线上页面一个都打不开？</td><td data-page-node-id="Ju9D2cCbVrfGDZaJCPlhrR">走人工标注：截图 + 填 <code data-page-node-id="XYaXh0lzf4VPqtktaBKVHI">examples/intake.sample.json</code>。质量下降，但比硬编数值强。</td></tr>
+        <tr data-page-node-id="XcgJdFIAEJCuFlgWgZlCHC"><td data-page-node-id="JZ39ZIHCLrBdmCICRulimx">能直接复制现成规范改改吗？</td><td data-page-node-id="b7eCHz8N52RduiA5jgV3zc">不能也不该。数值与约束是特定系统的产物，在你这套里没验证过，等于没有。</td></tr>
+        <tr data-page-node-id="47XuvWbFlHKtikJRDWZrc8"><td data-page-node-id="RmxLbA972BbAzpTpPltMd6">校验通过就完事了？</td><td data-page-node-id="SGeTeaaDBFeUisEnolAtO8">退出码 0 只是及格线。规范要跟着设计稿升级持续维护，见产出包的 <code data-page-node-id="jvh1xXD0vdTTTiGcRSibW3">foundation/design-sync.md</code>。</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer data-page-node-id="OL9D2hwk0zdSv8JhwiI5lp">
+    设计系统工厂 v1.0 · 2026-09-09 · 详细参考见 <code data-page-node-id="G9VmLZYkH1cozEZOn01lq3">references/</code> 与 <code data-page-node-id="pHYS5CxFa54wft627TNdqw">README.md</code>
+  </footer>
+
+</div>
+</body>
+</html>

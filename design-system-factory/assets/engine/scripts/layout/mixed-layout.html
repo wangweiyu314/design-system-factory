@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="JVfzHzPIrt42N0b0EIZDJi">
+<head data-page-node-id="GGTZ3r50dElogVv2tZ2ieI">
+  <meta charset="UTF-8" data-page-node-id="IdB1ILB0TEX2HbsuBBChBH">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="Pp1X6aZonF5ks1OYgD4HXd">
+  <title>混合布局模板 - 广发中后台设计系统</title>
+  <!--
+    ============================================================
+    模板：混合布局（MixedLayout）—— 顶部通栏一级导航 + 浅色侧边栏
+    规范：components/layout.md §7.5 + navigation.md §1 / §6 / §12
+    版本：design-specs v2.10
+
+    框架分层（自上而下）：
+      通栏顶栏 56px（品牌 + 一级菜单 + 用户区）── 横跨整个页面宽度
+      ├ 浅色侧边栏 200px（菜单搜索 + 二级菜单）  ├ 主区域
+      │                                          ├ 卡片式多标签 40px
+      │                                          ├ 面包屑行 48px
+      │                                          ├ 主内容区 24px
+      │                                          └ 常驻底部操作栏（可选）
+
+    使用方式：复制本文件 → 替换「业务占位」注释处的内容 → 保留结构与 Token
+    必做替换：
+      1. <title> 与 .gf-topbar__system 系统名
+      2. .gf-topnav 一级菜单（与 .gf-menu-group 分组一一对应）
+      3. .gf-menu-group / .gf-menu-item 菜单分组与图标
+      4. .gf-breadcrumb 层级文案
+      5. .gf-content 内业务页面内容（列表页/表单页/详情页/仪表盘页）
+    可选移除：.gf-tabsbar（多标签）、.gf-footer-bar（常驻底部操作栏）
+    ============================================================
+  -->
+  <style>
+    :root {
+      /* ---- 品牌与功能色（取值唯一来源：foundation/tokens.md） ---- */
+      --color-primary: #2A6CDD;
+      --color-primary-hover: #1E5BBF;
+      --color-primary-active: #164A9E;
+      --color-primary-light: rgba(42, 108, 221, 0.1);
+      --color-primary-focus: rgba(42, 108, 221, 0.2);
+      --color-error: #F5222D;
+      --color-error-text: #C80000;
+      --color-on-primary: #FFFFFF;
+      --color-nav: #0C1D43;
+      --color-topnav-text: #989FB7;
+      --color-nav-divider: rgba(255, 255, 255, 0.2);
+      --color-menu-active-bg: #F1F6FE;
+      --color-white: #FFFFFF;
+      --color-info-text: #2A6CDD;
+      --color-info-bg: #E6F4FE;
+      /* ---- 中性色 ---- */
+      --color-bg-canvas: #F7F8FA;
+      --color-bg-card: #FFFFFF;
+      --color-border: #F0F2F5;
+      --color-border-secondary: #E6EAF0;
+      --color-border-strong: #D7DCE0;
+      --color-fill-secondary: #F0F2F5;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-quaternary: #C8C9CC;
+      --color-text-heading: #13161B;
+      /* ---- 阴影 ---- */
+      --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.10);
+      --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.06);
+      --shadow-sider: 2px 0 8px rgba(2, 38, 81, 0.06);
+      --shadow-footer-bar: 0 -2px 8px rgba(0, 0, 0, 0.04);
+      /* ---- 圆角与间距（8px 基准网格） ---- */
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px;
+      --space-4: 16px; --space-5: 20px; --space-6: 24px;
+      /* ---- 布局尺寸 ---- */
+      --sidebar-width: 200px;
+      --sidebar-collapsed-width: 64px;
+      --header-height: 56px;
+      --tab-height: 40px;
+      --tab-card-min-width: 112px;
+      --tab-card-max-width: 320px;
+      --breadcrumb-height: 48px;
+      /* ---- 字体 ---- */
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      --font-number: 'DIN Alternate', 'DIN', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+      --font-size-body: 14px;
+      --transition-fast: 200ms ease-in-out;
+      --transition-normal: 300ms ease-in-out;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg-canvas);
+      color: var(--color-text);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font-family: var(--font-family); }
+
+    /* ============ 整体布局：通栏顶栏 + 主体（侧边栏 + 主区） ============ */
+    .gf-layout { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    .gf-body { flex: 1; display: flex; min-height: 0; }
+
+    /* ============ 通栏顶栏（56px，#0C1D43，横跨整页宽） ============ */
+    .gf-topbar {
+      height: var(--header-height); background: var(--color-nav);
+      display: flex; align-items: center; flex-shrink: 0; position: relative; z-index: 10;
+    }
+    .gf-brand { display: flex; align-items: center; margin-left: var(--space-6); flex-shrink: 0; }
+    .gf-brand__logo { width: 30px; height: 28px; display: block; flex-shrink: 0; }
+    .gf-brand__logo-mark { fill: var(--color-primary); }
+    .gf-brand__logo-bar { fill: var(--color-white); }
+    .gf-brand__wordmark { font-size: 16px; font-weight: 600; color: var(--color-white); white-space: nowrap; margin-left: var(--space-1); }
+    .gf-brand__divider { width: 1px; height: 16px; background: var(--color-nav-divider); margin: 0 var(--space-2); flex-shrink: 0; }
+    .gf-topbar__system { font-size: 16px; font-weight: 600; color: var(--color-white); white-space: nowrap; margin-left: 1px; }
+
+    /* 一级菜单：96px 等宽，选中态底部 40×3 白色指示条 */
+    .gf-topnav { display: flex; height: 100%; margin-left: 60px; }
+    .gf-topnav__item {
+      width: 96px; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; font-weight: 600; color: var(--color-topnav-text);
+      cursor: pointer; position: relative; white-space: nowrap;
+      transition: color var(--transition-fast);
+    }
+    .gf-topnav__item:hover { color: var(--color-white); }
+    .gf-topnav__item--active { color: var(--color-white); }
+    .gf-topnav__item--active::after {
+      content: ''; position: absolute; left: 50%; bottom: 0; transform: translateX(-50%);
+      width: 40px; height: 3px; background: var(--color-white);
+    }
+
+    /* 用户区：头像 + 姓名 */
+    .gf-topbar__user { margin-left: auto; margin-right: var(--space-4); display: flex; align-items: center; gap: var(--space-2); }
+    .gf-topbar__avatar {
+      width: 30px; height: 30px; border-radius: 50%; background: var(--color-primary);
+      color: var(--color-white); font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .gf-topbar__username { font-size: 14px; color: var(--color-text-quaternary); white-space: nowrap; }
+
+    /* ============ 浅色侧边导航（200px / 收起 64px，#FFFFFF） ============ */
+    .gf-sider {
+      width: var(--sidebar-width); background: var(--color-bg-card);
+      box-shadow: var(--shadow-sider); flex-shrink: 0; position: relative; z-index: 5;
+      display: flex; flex-direction: column; transition: width var(--transition-normal);
+    }
+    .gf-sider__logo { height: var(--header-height); display: flex; align-items: center; padding: 0 var(--space-4); flex-shrink: 0; }
+    .gf-sider__search { position: relative; width: 100%; }
+    .gf-sider__search-icon {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      width: 14px; height: 14px; color: var(--color-text-quaternary); pointer-events: none;
+    }
+    .gf-sider__search-input {
+      width: 100%; height: 36px; padding: 0 var(--space-3) 0 32px;
+      border: 1px solid var(--color-border-secondary); border-radius: var(--radius-card);
+      background: var(--color-bg-canvas); color: var(--color-text); font-size: 13px;
+      outline: none; transition: border-color var(--transition-fast), background var(--transition-fast);
+    }
+    .gf-sider__search-input::placeholder { color: var(--color-text-quaternary); }
+    .gf-sider__search-input:hover { border-color: var(--color-border-strong); }
+    .gf-sider__search-input:focus { border-color: var(--color-primary); background: var(--color-bg-card); }
+
+    .gf-sider__menu { flex: 1; overflow-y: auto; padding: var(--space-2); }
+    .gf-sider__menu::-webkit-scrollbar { width: 4px; }
+    .gf-sider__menu::-webkit-scrollbar-thumb { background: var(--color-border-secondary); border-radius: var(--radius-btn); }
+    .gf-menu-group__title {
+      padding: var(--space-2) var(--space-2) var(--space-1);
+      font-size: 12px; color: var(--color-text-tertiary); letter-spacing: 0.5px; white-space: nowrap;
+    }
+    .gf-menu-item {
+      display: flex; align-items: center; height: 40px; padding: 0 var(--space-3);
+      gap: var(--space-3); border-radius: var(--radius-btn);
+      color: var(--color-text); font-size: 14px; cursor: pointer; white-space: nowrap;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    .gf-menu-item:hover { background: var(--color-bg-canvas); }
+    .gf-menu-item--active { color: var(--color-primary); font-weight: 500; background: var(--color-menu-active-bg); }
+    .gf-menu-item__icon { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-text-secondary); }
+    .gf-menu-item--active .gf-menu-item__icon { color: var(--color-primary); }
+    .gf-menu-item--hidden, .gf-menu-group--hidden { display: none; }
+
+    /* 收起触发器：贴合侧边栏右边界，允许越界 12px */
+    .gf-collapse-trigger {
+      position: absolute; top: var(--space-4); right: -12px;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--color-bg-card); border: 1px solid var(--color-border);
+      box-shadow: var(--shadow-subtle); color: var(--color-text-secondary);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; z-index: 20; transition: color var(--transition-fast), background var(--transition-fast);
+    }
+    .gf-collapse-trigger:hover { background: var(--color-bg-canvas); color: var(--color-text); }
+    .gf-collapse-trigger svg { width: 12px; height: 12px; }
+
+    /* 侧边栏收起态 */
+    .gf-layout--collapsed .gf-sider { width: var(--sidebar-collapsed-width); }
+    .gf-layout--collapsed .gf-sider__search,
+    .gf-layout--collapsed .gf-menu-group__title,
+    .gf-layout--collapsed .gf-menu-item span { display: none; }
+    .gf-layout--collapsed .gf-sider__logo { justify-content: center; padding: 0; }
+    .gf-layout--collapsed .gf-menu-item { justify-content: center; padding: 0; }
+
+    /* ============ 主区域 ============ */
+    .gf-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--color-bg-canvas); }
+
+    /* ============ 卡片式多标签导航（40px，激活白底 + 栏体下投影） ============ */
+    .gf-tabsbar {
+      /* z-index 必须给：栏体下投影要绘制在紧随其后的面包屑行（不透明背景）之上，
+       * 否则同层后画的兄弟元素会把阴影整片盖掉，表现为「写了 box-shadow 但看不见」 */
+      position: relative; z-index: 1;
+      height: var(--tab-height); display: flex; align-items: stretch; flex-shrink: 0;
+      background: var(--color-bg-canvas); box-shadow: var(--shadow-subtle);
+    }
+    .gf-tabsbar__arrow {
+      width: 32px; flex-shrink: 0; border: none; background: var(--color-bg-canvas);
+      color: var(--color-text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      visibility: hidden; /* 占位避免布局跳动，溢出时切为 visible */
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    .gf-tabsbar__arrow--visible { visibility: visible; }
+    .gf-tabsbar__arrow:hover { background: var(--color-bg-card); color: var(--color-text); }
+    .gf-tabsbar__viewport {
+      flex: 1; min-width: 0; position: relative;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none; /* 隐藏滚动条，由左右箭头编程滚动 */
+    }
+    .gf-tabsbar__viewport::-webkit-scrollbar { display: none; }
+    .gf-tabsbar__track { display: inline-flex; align-items: stretch; height: var(--tab-height); }
+    .gf-tabsbar__tab {
+      /* 宽度随文字自适应，min/max 兜底；flex: 0 0 auto 保证不被挤压（溢出交给箭头滚动） */
+      position: relative; flex: 0 0 auto;
+      min-width: var(--tab-card-min-width); max-width: var(--tab-card-max-width);
+      height: var(--tab-height); box-sizing: border-box;
+      /* 用 block + line-height 垂直居中，而不是 display: flex：
+       * flex 容器上的 text-overflow: ellipsis 对裸文本子节点无效（会变成硬裁切） */
+      display: block; line-height: var(--tab-height); text-align: center;
+      padding: 0 var(--space-5) 0 var(--space-3);
+      font-size: 14px; color: var(--color-text); cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    /* 页签间分隔线：由右侧页签的左边框承担；末位页签补右边框 */
+    .gf-tabsbar__tab + .gf-tabsbar__tab { border-left: 1px solid var(--color-border); }
+    .gf-tabsbar__tab:last-child { border-right: 1px solid var(--color-border); }
+    /* 可关闭页签：右侧多留 32px 给关闭按钮，保证「文字 ↔ X」有 8px 间隙不挤在一起
+     * （X 宽 16px、距右边缘 8px，占 8–24px；文字区右边界 32px，故间隙 8px） */
+    .gf-tabsbar__tab[data-closable="true"] { padding-right: calc(var(--space-6) + var(--space-2)); }
+    .gf-tabsbar__tab:hover { color: var(--color-primary); }
+    .gf-tabsbar__tab--active { background: var(--color-bg-card); color: var(--color-primary); font-weight: 500; }
+    .gf-tabsbar__close {
+      position: absolute; right: var(--space-2); top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
+      border: none; background: transparent; border-radius: var(--radius-btn);
+      color: var(--color-text-secondary); cursor: pointer; padding: 0;
+      transition: background var(--transition-fast), color var(--transition-fast);
+    }
+    .gf-tabsbar__close:hover { background: var(--color-fill-secondary); color: var(--color-text); }
+
+    /* ============ 面包屑行（48px，位于多标签栏下方、内容区之上） ============ */
+    .gf-breadcrumb {
+      height: var(--breadcrumb-height); display: flex; align-items: center; flex-shrink: 0;
+      padding-left: var(--space-6); background: var(--color-bg-canvas);
+    }
+    .gf-breadcrumb__icon { width: 16px; height: 16px; margin-right: var(--space-2); flex-shrink: 0; color: var(--color-text-quaternary); }
+    .gf-breadcrumb__item {
+      font-size: 12px; line-height: 16px; color: var(--color-text-tertiary); white-space: nowrap;
+      transition: color var(--transition-fast);
+    }
+    .gf-breadcrumb__item:hover { color: var(--color-primary); cursor: pointer; }
+    .gf-breadcrumb__sep { font-size: 12px; line-height: 16px; color: var(--color-text-tertiary); margin: 0 var(--space-2); }
+    .gf-breadcrumb__item--current { font-size: 14px; line-height: 20px; color: var(--color-text); }
+    .gf-breadcrumb__item--current:hover { color: var(--color-text); cursor: default; }
+
+    /* ============ 主内容区（左右留白由布局层唯一提供） ============ */
+    /* 顶部 16px 而非 24px：面包屑行已独占 48px 并自带上下留白，
+     * 内容区再补 24px 会让「面包屑 → 内容」显得过空 */
+    .gf-content { flex: 1; overflow-y: auto; padding: var(--space-4) var(--space-6) var(--space-6); background: var(--color-bg-canvas); }
+
+    /* ============ 常驻底部操作栏 ============ */
+    .gf-footer-bar {
+      flex-shrink: 0; background: var(--color-bg-card);
+      border-top: 1px solid var(--color-border-secondary);
+      box-shadow: var(--shadow-footer-bar);
+      padding: var(--space-4) var(--space-6);
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--space-3);
+    }
+    .gf-footer-bar__left { display: flex; align-items: center; gap: var(--space-3); }
+    .gf-footer-bar__count { font-size: 13px; color: var(--color-text-tertiary); }
+    .gf-footer-bar__count strong { color: var(--color-primary); font-weight: 600; font-family: var(--font-number); }
+    .gf-footer-bar__right { display: flex; align-items: center; gap: var(--space-3); }
+
+    /* ============ 按钮 ============
+       语义：裸 .gf-btn = 主按钮，--secondary = 次按钮，--danger = 危险
+       规范：components/basic.md §按钮 CSS 类语义（强制）　禁止 .gf-btn--primary */
+    .gf-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1);
+      min-width: 76px; height: 32px; padding: 0 var(--space-4);
+      font-family: var(--font-family); font-size: var(--font-size-body); line-height: 1;
+      border-radius: var(--radius-btn); border: 1px solid var(--color-primary);
+      background: var(--color-primary); color: var(--color-on-primary);
+      cursor: pointer; white-space: nowrap; transition: all var(--transition-fast);
+    }
+    .gf-btn:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+    .gf-btn:active { background: var(--color-primary-active); border-color: var(--color-primary-active); }
+    .gf-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-primary-focus); }
+    .gf-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    .gf-btn--secondary { background: var(--color-bg-card); border-color: var(--color-border-strong); color: var(--color-text); }
+    .gf-btn--secondary:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-bg-card); }
+    .gf-btn--danger { background: var(--color-error); border-color: var(--color-error); color: var(--color-on-primary); }
+    .gf-btn--danger:hover { background: var(--color-error-text); border-color: var(--color-error-text); color: var(--color-on-primary); }
+
+    /* ============ 页面标题区（PageHeader 为标题唯一来源） ============ */
+    .gf-page-header { margin-bottom: var(--space-4); }
+    .gf-page-header__title { font-size: 20px; font-weight: 600; color: var(--color-text-heading); line-height: 28px; }
+    .gf-page-header__desc { font-size: 13px; color: var(--color-text-tertiary); margin-top: var(--space-1); }
+
+    /* ============ 提示条 ============ */
+    .gf-alert {
+      display: flex; align-items: flex-start; gap: var(--space-2);
+      background: var(--color-info-bg); border-radius: var(--radius-card);
+      padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4);
+      color: var(--color-info-text); font-size: 14px; line-height: 22px;
+    }
+    .gf-alert__icon { width: 16px; height: 16px; margin-top: 3px; flex-shrink: 0; }
+    .gf-alert__body { flex: 1; min-width: 0; }
+    .gf-alert__close {
+      margin-left: auto; background: none; border: none; cursor: pointer;
+      color: var(--color-info-text); opacity: 0.6; width: 16px; height: 16px;
+      padding: 0; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    }
+    .gf-alert__close:hover { opacity: 1; }
+
+    /* 业务占位卡片 */
+    .gf-placeholder {
+      background: var(--color-bg-card); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card); padding: var(--space-6);
+      color: var(--color-text-tertiary); font-size: 13px; line-height: 1.8;
+    }
+  </style>
+</head>
+<body data-page-node-id="SqazS91cs70gGkO0IX3YQd">
+  <div class="gf-layout" id="gfLayout" data-page-node-id="Bi6H2KgTwkbxCyqTz28ygP">
+  <!-- ============ 通栏顶栏（56px，横跨整页） ============ -->
+  <header class="gf-topbar" data-page-node-id="hr2oJpoNeXlNq1HUvLsWpM">
+    <div class="gf-brand" data-page-node-id="QTBMBlHTBJPACB0fZ2grpT">
+      <!-- 业务替换点：品牌 Logo（内联 SVG，禁止外链图片 / 图标字体） -->
+      <svg class="gf-brand__logo" viewBox="0 0 30 28" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="38ZnQ1f8XLUXG3VpmfwfdS">
+        <path class="gf-brand__logo-mark" d="M15 1L28 8V20L15 27L2 20V8L15 1Z" data-page-node-id="yxCLYqPyoCS8Gd5yUhsUgg"/>
+        <path class="gf-brand__logo-bar" d="M9 18V10H13.5C15.4 10 16.5 10.9 16.5 12.5C16.5 14.1 15.4 15 13.5 15H11V18H9ZM11 13.2H13.2C13.9 13.2 14.3 12.9 14.3 12.5C14.3 12.1 13.9 11.8 13.2 11.8H11V13.2Z" data-page-node-id="mD0SiGkmAr534x9QOiO2qV"/>
+      </svg>
+      <span class="gf-brand__wordmark" data-page-node-id="LjRRdyhIQQLwryNtSi2SG3">广发证券</span>
+      <span class="gf-brand__divider" data-page-node-id="cTv0P7sjZFa7GuFmdHC1Z8"></span>
+      <!-- 业务替换点：系统名称 -->
+      <span class="gf-topbar__system" data-page-node-id="3Vy6jBjRBtutPYX6G43z7J">广发中后台系统</span>
+    </div>
+
+    <!-- 业务替换点：一级菜单（与侧边栏菜单分组一一对应） -->
+    <nav class="gf-topnav" aria-label="一级导航" data-page-node-id="5wJPXA77xIwAVCYTqGFjHe">
+      <span class="gf-topnav__item gf-topnav__item--active" data-page-node-id="NuxA50DSZdNT16CjbzxMxs">交易管理</span>
+      <span class="gf-topnav__item" data-page-node-id="PDKXgU4uRvBcItqF4NPpzt">持仓管理</span>
+      <span class="gf-topnav__item" data-page-node-id="42BqZvwPcsIHXjWKVOlmJ0">基金产品</span>
+      <span class="gf-topnav__item" data-page-node-id="lEwaADRukvb3BGP1c8Gjx8">报表统计</span>
+    </nav>
+
+    <!-- 业务替换点：用户区 -->
+    <div class="gf-topbar__user" data-page-node-id="73PgEEb66aqasiHb7nwosN">
+      <span class="gf-topbar__avatar" title="用户名" data-page-node-id="cycbT22oiwz8hVGEqZ2EmW">广</span>
+      <span class="gf-topbar__username" data-page-node-id="AM3Sa9ATGtRk9GViZFV3rW">用户名</span>
+    </div>
+  </header>
+
+  <div class="gf-body" data-page-node-id="e932rHnsEz38tHxbOmy8PB">
+    <!-- ============ 浅色侧边导航（200px） ============ -->
+    <aside class="gf-sider" data-page-node-id="IHC8XD2Qe7W6kdnvWpM7la">
+      <!-- 收起 / 展开触发器：贴合侧边栏右边界 -->
+      <button class="gf-collapse-trigger" title="收起菜单" id="btnCollapse" aria-label="收起菜单" data-page-node-id="Z2OBC6Il1cPXT9L9k7i9gt">
+        <svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="JfQcXfGyWGUpPlqDpDwDQ4">
+          <path d="M7.5 3L4.5 6L7.5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="KV49dLeAlyfXoKhYwh4NsW"/>
+        </svg>
+      </button>
+
+      <div class="gf-sider__logo" data-page-node-id="bcxK7srUzKBrNVaPfgGZeZ">
+        <div class="gf-sider__search" data-page-node-id="wFbPDIHX9m6FDvG889avbQ">
+          <!-- 业务替换点：菜单搜索图标（图标须来自 foundation/icons.md，内联 SVG） -->
+          <svg class="gf-sider__search-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="hkD1T7UlYL2qDFeDiL6rYL">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.4" data-page-node-id="4AAFr2OJTMNeHuy42KyLYB"/>
+            <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="lqFbDbbI8hqmO07oVEISJg"/>
+          </svg>
+          <input class="gf-sider__search-input" type="text" placeholder="搜索功能菜单..." id="menuSearch" data-page-node-id="TSSsjl8Ghj6BfPFS1P1RjR" />
+        </div>
+      </div>
+
+      <nav class="gf-sider__menu" data-page-node-id="4HTsmBE0lXsKGSxjGNclfG">
+        <!-- 业务替换点：菜单分组（标题 + 菜单项 + 图标） -->
+        <div class="gf-menu-group" data-page-node-id="9YTEnGlC7LWRH5jTtv08TP">
+          <div class="gf-menu-group__title" data-page-node-id="oQN0v5siIMjxhetoULAaLE">分组一</div>
+          <div class="gf-menu-item gf-menu-item--active" data-page-node-id="VjpLEgfolInsaariNspXEI">
+            <svg class="gf-menu-item__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="GnbdddNGYnoIj6eeEpwCIz">
+              <rect x="2.5" y="3.5" width="11" height="9" rx="1.5" stroke="currentColor" stroke-width="1.4" data-page-node-id="Hg4yJjbRVyyuqOTMi1VAfs"/>
+              <path d="M5 6.5H11M5 9H11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="iLAAxir15xX3rA35LBtdMN"/>
+            </svg>
+            <span data-page-node-id="o8zCiKpURRvAZnljUtmkgB">菜单项一</span>
+          </div>
+          <div class="gf-menu-item" data-page-node-id="mkDef70QFHqW0y2BhssfBi">
+            <svg class="gf-menu-item__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="E6tcMQwXDVXCtviG5CbW4n">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4" data-page-node-id="dVpYfjPr4GVKXFd0Sm3vdG"/>
+              <path d="M5 8L7 10L11 6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="RhsXCVFPsFrx9EFdYNeH8i"/>
+            </svg>
+            <span data-page-node-id="RFRTsc68nbQd40j7Rfrpbw">菜单项二</span>
+          </div>
+        </div>
+
+        <div class="gf-menu-group" data-page-node-id="eBUSnBAJc7FrCzXGnBQpHI">
+          <div class="gf-menu-group__title" data-page-node-id="uuZLpoU8S7OyEkZqXcesa9">分组二</div>
+          <div class="gf-menu-item" data-page-node-id="gPBkYK5OWaXjP2MEDQLPdL">
+            <svg class="gf-menu-item__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="VbHjLFE6rFFugcSbPj3Ok1">
+              <path d="M2 11L5 7L8 9L11 4L14 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="h1DIv6KeinL0PNa4U3KBvs"/>
+              <path d="M2 13.5H14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="O7RV9KDWIO0txyYNHtoqHE"/>
+            </svg>
+            <span data-page-node-id="nz0zeZ0d7u9Qcwz6u2C8pD">菜单项三</span>
+          </div>
+        </div>
+      </nav>
+    </aside>
+
+    <!-- ============ 主区域 ============ -->
+    <div class="gf-main" data-page-node-id="wHujTCN0JBtUDskqdUOqf6">
+      <!-- 卡片式多标签导航 -->
+      <nav class="gf-tabsbar" aria-label="多标签导航" data-page-node-id="szIFC4St2FWtPHmJDxDESR">
+        <button class="gf-tabsbar__arrow" id="tabArrowPrev" title="上一个标签" aria-label="向左切换标签" data-page-node-id="HEkYMq909EjS2zYpZ4mybE">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="DkiAp1h1E49iSVV3DQuj8L">
+            <path d="M7 3L4 6L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="rGFH3LGDeF47pnVy0IhNK1"/>
+          </svg>
+        </button>
+        <div class="gf-tabsbar__viewport" id="tabsViewport" data-page-node-id="D8P4RSKzNnxGA5ZiBOirMN">
+          <div class="gf-tabsbar__track" id="tabsbar" data-page-node-id="lEjffU1xMZbRJX9UcvDQoB">
+            <!-- 首页标签固定不可关闭：data-closable="false" -->
+            <div class="gf-tabsbar__tab" data-closable="false" data-page-node-id="7zQ4Ksc9gjY4xbaW4kxbqV">首页</div>
+            <!-- 业务替换点：标签项；data-closable="true" 表示可关闭 -->
+            <div class="gf-tabsbar__tab gf-tabsbar__tab--active" data-closable="true" data-page-node-id="8FfJ6yKxLLuFgjR5s1c2WC">当前页面
+              <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签" data-page-node-id="9x3yBDZKLPidQRk5ZHA94n">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="Lni73ca3bkXmePqh6HeCT9">
+                  <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="txVNgoKbh5AZaJ526kGdcA"/>
+                </svg>
+              </button>
+            </div>
+            <div class="gf-tabsbar__tab" data-closable="true" data-page-node-id="er0okDFG4p66zvL6ac8Kxf">其他页面
+              <button class="gf-tabsbar__close" title="关闭标签" aria-label="关闭标签" data-page-node-id="UJWwRk9a1as5B6pNAwdyUu">
+                <svg width="10" height="10" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="gbfBGLWkJ69lB2IE1Kp6QX">
+                  <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="wgGA536bJoTXarblEADnQ9"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <button class="gf-tabsbar__arrow" id="tabArrowNext" title="下一个标签" aria-label="向右切换标签" data-page-node-id="a1G5BHd9CCqfk9sHuzUrTF">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="vvVDulFHN2QW5lDdIlVFub">
+            <path d="M5 3L8 6L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="d0g4iWg924RHZZYQmuPUAE"/>
+          </svg>
+        </button>
+      </nav>
+
+      <!-- 面包屑（独立成行） -->
+      <nav class="gf-breadcrumb" aria-label="面包屑" data-page-node-id="cpCWnYqKgYoMyyQZMMbSq3">
+        <svg class="gf-breadcrumb__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="PpoBKrfS7FECKnn2I2mXuk">
+          <path d="M8 1.5C5.23858 1.5 3 3.73858 3 6.5C3 10 8 14.5 8 14.5C8 14.5 13 10 13 6.5C13 3.73858 10.7614 1.5 8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" data-page-node-id="WOphZA4zJRGFSsWyXEEshh"/>
+          <circle cx="8" cy="6.4" r="1.9" stroke="currentColor" stroke-width="1.4" data-page-node-id="GIyGjbEaqVH0U8vfM1x3Iz"/>
+        </svg>
+        <!-- 业务替换点：面包屑层级（当前层级加 --current，不参与 hover 高亮） -->
+        <span class="gf-breadcrumb__item" data-page-node-id="AEjSsAaslL0eoHZNyMr6xb">分组一</span>
+        <span class="gf-breadcrumb__sep" data-page-node-id="80AHD2iDYfhQUvGzB0fNB1">/</span>
+        <span class="gf-breadcrumb__item gf-breadcrumb__item--current" data-page-node-id="RMRg6cO0RP8s02vkAS57wc">菜单项一</span>
+      </nav>
+
+      <!-- ============ 主内容区 ============ -->
+      <main class="gf-content" data-page-node-id="CrLppTcExhUiTozo7lbhGo">
+        <!-- 业务替换点：PageHeader（标题唯一来源，禁止 padding-inline） -->
+        <div class="gf-page-header" data-page-node-id="02JHeE3kbC5egLzvqdZINK">
+          <h1 class="gf-page-header__title" data-page-node-id="XLkhfaBXohmVu4sbN4nWhB">页面标题</h1>
+          <p class="gf-page-header__desc" data-page-node-id="qOyPemPB8HFJAWFvsUgVpE">页面说明文字，简要描述本页用途与操作指引</p>
+        </div>
+
+        <!-- 业务替换点：info 提示条（可关闭，可整块移除） -->
+        <div class="gf-alert" id="pageAlert" role="alert" data-page-node-id="UZD0JQ6myis8mNsFdzjh4R">
+          <svg class="gf-alert__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="ylH5xVt3ABxYz3vC9wsqpA">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4" data-page-node-id="jkRHNud7z5F6oLMaDsuMLN"/>
+            <path d="M8 7V11M8 5V5.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="tDsAjjC0Sgl9ICfyzGrxfn"/>
+          </svg>
+          <div class="gf-alert__body" data-page-node-id="rT1I87SMcolDTb56gZNuuB"><strong data-page-node-id="S8P47eAhTqhJSCaou5frEv">提示：</strong>此处放置页面级说明或合规提示，支持关闭。</div>
+          <button class="gf-alert__close" title="关闭提示" aria-label="关闭提示" id="alertClose" data-page-node-id="JAgJvijnNW8CQKL9hjZzCU">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="A1agkflWuBY07p9bTPlxMp">
+              <path d="M4 4L12 12M4 12L12 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="N26yi9ObksWZURnrEW9ekl"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 业务替换点：页面主体（列表页 / 表单页 / 详情页 / 仪表盘页内容） -->
+        <div class="gf-placeholder" data-page-node-id="p1xTUnkjPzXD1X2GjvB6Ce">
+          此处替换为业务页面内容。<br data-page-node-id="fXy64k3x92xRxn7IakhT6R">
+          · 列表页 → pages/list-page.md 12 层结构<br data-page-node-id="T5tBMjEewK67OOvR6S7Ycl">
+          · 表单页 → pages/form-page.md 6 层结构<br data-page-node-id="8CHWyjvlRnHknvUVIdgcX9">
+          · 详情页 → pages/detail-page.md 7 层结构<br data-page-node-id="LB412IWiDWRbi7rujae1AK">
+          · 仪表盘页 → pages/dashboard-page.md 6 层结构
+        </div>
+      </main>
+
+      <!-- 常驻底部操作栏（非表单/列表页可整块移除） -->
+      <footer class="gf-footer-bar" data-page-node-id="hrH6ygp0h72P7k0e9h39c4">
+        <div class="gf-footer-bar__left" data-page-node-id="tx1KkEEZWyFbUMfyHviYoK">
+          <span class="gf-footer-bar__count" data-page-node-id="4cQXgt9LI2YBOEgccOvVtQ">已选择 <strong data-page-node-id="PWeyyBldIpOOuPTjhs1UAI">0</strong> 项</span>
+        </div>
+        <div class="gf-footer-bar__right" data-page-node-id="DkpBSynVWNSK1qnzu0aJK1">
+          <button class="gf-btn gf-btn--secondary" data-page-node-id="xCWJHx0Wcs1o6Qp3IyL6QG">取消</button>
+          <button class="gf-btn" data-page-node-id="atQG2xI4MfOx2ePZMA8U4U">确定</button>
+        </div>
+      </footer>
+    </div>
+  </div>
+  </div>
+
+  <script>
+    (function () {
+      /* ---------- 通栏顶栏一级菜单切换 ----------
+       * 业务替换点：真实项目里点击一级菜单应联动切换侧边栏菜单与内容区，
+       * 此处只演示选中态切换，避免模板自带假数据误导 */
+      document.querySelectorAll('.gf-topnav__item').forEach(function (item) {
+        item.addEventListener('click', function () {
+          document.querySelectorAll('.gf-topnav__item').forEach(function (i) {
+            i.classList.remove('gf-topnav__item--active');
+          });
+          item.classList.add('gf-topnav__item--active');
+        });
+      });
+
+      /* ---------- 侧边栏菜单搜索 ---------- */
+      var searchInput = document.getElementById('menuSearch');
+      if (searchInput) {
+        searchInput.addEventListener('input', function () {
+          var query = this.value.trim().toLowerCase();
+          document.querySelectorAll('.gf-menu-item').forEach(function (item) {
+            var text = item.textContent.trim().toLowerCase();
+            item.classList.toggle('gf-menu-item--hidden', !!query && text.indexOf(query) === -1);
+          });
+          document.querySelectorAll('.gf-menu-group').forEach(function (group) {
+            var visible = group.querySelectorAll('.gf-menu-item:not(.gf-menu-item--hidden)').length;
+            group.classList.toggle('gf-menu-group--hidden', !!query && visible === 0);
+          });
+        });
+      }
+
+      /* ---------- 侧边栏收起 / 展开 ---------- */
+      var btnCollapse = document.getElementById('btnCollapse');
+      if (btnCollapse) {
+        btnCollapse.addEventListener('click', function () {
+          var layout = document.getElementById('gfLayout');
+          if (layout) layout.classList.toggle('gf-layout--collapsed');
+        });
+      }
+
+      /* ---------- 多标签：箭头溢出滚动 ---------- */
+      var tabsbar = document.getElementById('tabsbar');
+      var tabsViewport = document.getElementById('tabsViewport');
+      var tabArrowPrev = document.getElementById('tabArrowPrev');
+      var tabArrowNext = document.getElementById('tabArrowNext');
+      var TAB_SCROLL_STEP = 120;
+
+      function updateTabArrows() {
+        var overflow = tabsViewport.scrollWidth > tabsViewport.clientWidth + 1;
+        var atStart = tabsViewport.scrollLeft <= 1;
+        var atEnd = tabsViewport.scrollLeft >= tabsViewport.scrollWidth - tabsViewport.clientWidth - 1;
+        tabArrowPrev.classList.toggle('gf-tabsbar__arrow--visible', overflow && !atStart);
+        tabArrowNext.classList.toggle('gf-tabsbar__arrow--visible', overflow && !atEnd);
+      }
+      tabArrowPrev.addEventListener('click', function () { tabsViewport.scrollLeft -= TAB_SCROLL_STEP; });
+      tabArrowNext.addEventListener('click', function () { tabsViewport.scrollLeft += TAB_SCROLL_STEP; });
+      tabsViewport.addEventListener('scroll', updateTabArrows);
+      window.addEventListener('resize', updateTabArrows);
+
+      /* ---------- 多标签：激活切换 + 关闭策略 ---------- */
+      tabsbar.addEventListener('click', function (e) {
+        var closeBtn = e.target.closest('.gf-tabsbar__close');
+        var tab = e.target.closest('.gf-tabsbar__tab');
+        if (!tab) return;
+
+        if (closeBtn) {
+          if (tab.dataset.closable !== 'true') return;      // 首页等固定标签不可关闭
+          var tabs = Array.prototype.slice.call(tabsbar.children);
+          if (tabs.length <= 1) return;                      // 保留最后一个标签
+          var index = tabs.indexOf(tab);
+          var wasActive = tab.classList.contains('gf-tabsbar__tab--active');
+          tab.remove();
+          if (wasActive) {                                   // 关闭激活项后激活相邻标签
+            var next = tabs[index - 1] || tabs[index + 1];
+            if (next && next.parentNode) next.classList.add('gf-tabsbar__tab--active');
+          }
+          updateTabArrows();
+          return;
+        }
+
+        tabsbar.querySelectorAll('.gf-tabsbar__tab').forEach(function (t) {
+          t.classList.remove('gf-tabsbar__tab--active');
+        });
+        tab.classList.add('gf-tabsbar__tab--active');
+      });
+      updateTabArrows();
+
+      /* ---------- 提示条关闭 ---------- */
+      var alertClose = document.getElementById('alertClose');
+      if (alertClose) {
+        alertClose.addEventListener('click', function () {
+          document.getElementById('pageAlert').style.display = 'none';
+        });
+      }
+    })();
+  </script>
+</body>
+</html>

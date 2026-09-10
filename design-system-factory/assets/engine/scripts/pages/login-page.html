@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="UGggqcLRO2etoBX4MZSJsy">
+<head data-page-node-id="TfC41RutMLAq8vMtaSdYBy">
+  <meta charset="UTF-8" data-page-node-id="5LxtUwgjAJf7HzBH4HHGIv">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="zGgVZtwHhMYit7Desc9umW">
+  <title>登录页模板 - 广发中后台设计系统</title>
+  <!--
+    ============================================================
+    模板：登录页（LoginPage）
+    规范：pages/login-page.md + components/data-entry.md + basic.md
+    版本：design-specs v2.5
+
+    两种样式二选一（默认样式一）：
+      样式一 · 双栏  —— 渐变背景 + 980×616 双栏卡（左品牌 490 / 右表单 490）
+      样式二 · 单栏  —— 白底 + 408×430 单栏卡（水平垂直居中）
+      切换方式：给 .gf-login 追加 class="gf-login--plain" 即为样式二；
+                或直接删除 .gf-login__brand 品牌区并改用 --plain 规则。
+
+    必做替换（搜索「业务替换点」）：
+      1. <title> 与品牌区：.gf-login__brand-mark 字样、.gf-login__brand-name 系统名
+      2. .gf-login__brand 内联 SVG 插图（必须手绘内联，禁止外链图片/图标库）
+      3. .gf-login__title 标题文案、.gf-login__subtitle 副标题
+      4. 提交逻辑：form submit 回调中的接口调用（现有为 setTimeout 模拟）
+      5. 忘记密码跳转链接
+
+    强约束（改动即踩坑）：
+      · 输入框容器必须 position: relative，图标绝对定位 top:50% + translateY(-50%)
+      · 带前缀/后缀图标的输入框必须预留 36px padding，禁止文字压图标
+      · 图标禁止固定 top 像素值定位
+      · 控件宽度统一 --login-field-width(300px)，禁止自由数值
+      · 间距节奏：标题→输入框 32px、输入框间 16px、输入框→辅助区 16px、辅助区→按钮 16px
+    ============================================================
+  -->
+  <style>
+    :root {
+      /* ---- 品牌与功能色（取值唯一来源：foundation/tokens.md） ---- */
+      --color-primary: #2A6CDD;
+      --color-primary-hover: #1E5BBF;
+      --color-primary-active: #164A9E;
+      --color-primary-light: rgba(42, 108, 221, 0.1);
+      --color-primary-focus: rgba(42, 108, 221, 0.2);
+      --color-error: #F5222D;
+      --color-error-text: #C80000;
+      --color-error-bg: #FEEBEC;
+      --color-success-text: #2CAA41;
+      --color-accent-2: #F4FAFF;
+      --color-accent-3: #E6F4FE;
+      --color-accent-6: #ACD8FC;
+      /* ---- 中性色 ---- */
+      --color-white: #FFFFFF;
+      --color-on-primary: #FFFFFF;
+      --color-on-primary-muted: rgba(255, 255, 255, 0.4);
+      --color-bg-canvas: #F7F8FA;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-quaternary: #C8C9CC;
+      --color-text-heading: #13161B;
+      --color-border: #F0F2F5;
+      --color-border-secondary: #E6EAF0;
+      --color-border-strong: #D7DCE0;
+      /* ---- 登录页专用 ---- */
+      --login-bg-start: #E6F0FF;
+      --login-bg-mid: #DCE7FF;
+      --login-bg-end: #D8DBFF;
+      --login-card-width: 980px;
+      --login-card-height: 616px;
+      --login-card-pad-y: 14px;
+      --login-card-pad-x: 18px;
+      --login-field-width: 300px;
+      /* ---- 圆角 / 阴影 / 间距 / 动效 ---- */
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --shadow-card: 0px 2px 8px rgba(0, 0, 0, 0.10);
+      --shadow-medium: 0px 6px 16px rgba(0, 0, 0, 0.12);
+      --space-1: 4px; --space-2: 8px; --space-3: 12px;
+      --space-4: 16px; --space-6: 24px; --space-8: 32px;
+      --transition-fast: 200ms ease-in-out;
+      --transition-normal: 300ms ease-in-out;
+      /* ---- 字体 ---- */
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { height: 100%; }
+    body { font-family: var(--font-family); color: var(--color-text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+    button, input { font-family: var(--font-family); }
+
+    /* ============ 样式一：渐变背景 + 双栏登录卡 ============ */
+    .gf-login {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: var(--space-8) var(--space-6);
+      background: linear-gradient(to bottom, var(--login-bg-start) 0%, var(--login-bg-mid) 50%, var(--login-bg-end) 100%);
+      transition: background var(--transition-normal);
+    }
+    .gf-login__card {
+      width: var(--login-card-width); height: var(--login-card-height);
+      background: var(--color-white); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-medium);
+      padding: var(--login-card-pad-y) var(--login-card-pad-x);
+      display: flex; overflow: hidden;
+    }
+
+    /* ---- 左侧品牌区 490 × 580 ---- */
+    .gf-login__brand {
+      flex: 1; min-width: 0; border-radius: var(--radius-card);
+      background: var(--color-accent-2);
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: var(--space-8); gap: var(--space-6);
+    }
+    .gf-login__brand-logo { display: flex; align-items: center; gap: var(--space-2); }
+    .gf-login__brand-mark {
+      width: 32px; height: 32px; border-radius: var(--radius-card);
+      background: var(--color-primary); color: var(--color-on-primary);
+      font-size: 16px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .gf-login__brand-name { font-size: 18px; font-weight: 600; color: var(--color-text-heading); letter-spacing: 1px; }
+    .gf-login__brand-slogan { font-size: 13px; color: var(--color-text-tertiary); text-align: center; line-height: 1.8; max-width: 300px; }
+
+    /* ---- 右侧表单区 490 × 580，内容 300px 垂直居中 ---- */
+    .gf-login__panel {
+      flex: 1; min-width: 0;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
+      padding: 0 var(--space-8);
+    }
+    .gf-login__inner { width: var(--login-field-width); }
+
+    .gf-login__title { font-size: 32px; font-weight: 500; color: var(--color-text-heading); line-height: 1.4; margin-bottom: 14px; }
+    .gf-login__subtitle { font-size: 13px; color: var(--color-text-tertiary); margin-bottom: var(--space-6); }
+
+    /* ---- 输入框 300 × 40，图标绝对定位居中 ---- */
+    .gf-field { position: relative; margin-bottom: var(--space-4); }
+    .gf-field__icon {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      width: 16px; height: 16px; color: var(--color-text-quaternary);
+      pointer-events: none; transition: color var(--transition-fast);
+    }
+    .gf-field__icon--prefix { left: var(--space-2); }
+    .gf-field__icon--suffix { right: var(--space-2); pointer-events: auto; cursor: pointer; background: none; border: none; padding: 0; }
+    .gf-field__icon--suffix:hover { color: var(--color-primary); }
+    .gf-field__input {
+      width: 100%; height: 40px;
+      padding: 0 var(--space-4) 0 36px;
+      border: 1px solid var(--color-border-strong); border-radius: var(--radius-btn);
+      background: var(--color-white); color: var(--color-text); font-size: 14px; font-weight: 400;
+      outline: none; transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .gf-field__input::placeholder { color: var(--color-text-quaternary); font-size: 14px; font-weight: 400; }
+    .gf-field__input:hover { border-color: var(--color-primary); }
+    .gf-field__input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-light); }
+    .gf-field--suffix .gf-field__input { padding-right: 36px; }
+    .gf-field--error .gf-field__input { border-color: var(--color-error); }
+    .gf-field__error { display: none; font-size: 12px; color: var(--color-error-text); margin-top: var(--space-1); line-height: 1.5; }
+    .gf-field--error .gf-field__error { display: block; }
+
+    /* ---- 辅助操作区 300 × 20 ---- */
+    .gf-login__assist { width: 100%; height: 20px; margin-bottom: var(--space-4); display: flex; align-items: center; justify-content: space-between; }
+    .gf-check { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; user-select: none; }
+    .gf-check__box { width: 14px; height: 14px; border-radius: var(--radius-btn); accent-color: var(--color-primary); cursor: pointer; margin: 0; flex-shrink: 0; }
+    .gf-check__label { font-size: 14px; font-weight: 400; color: var(--color-text-tertiary); }
+    .gf-login__forgot { font-size: 14px; font-weight: 500; color: var(--color-primary); text-decoration: none; background: none; border: none; cursor: pointer; padding: 0; }
+    .gf-login__forgot:hover { color: var(--color-primary-hover); text-decoration: underline; }
+
+    /* ---- 登录按钮 300 × 40 ---- */
+    .gf-login__submit {
+      width: 100%; height: 40px;
+      border: 1px solid var(--color-primary); border-radius: var(--radius-btn);
+      background: var(--color-primary); color: var(--color-on-primary);
+      font-size: 16px; font-weight: 500; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2);
+      transition: background var(--transition-fast), border-color var(--transition-fast);
+    }
+    .gf-login__submit:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+    .gf-login__submit:active { background: var(--color-primary-active); border-color: var(--color-primary-active); }
+    .gf-login__submit--loading { pointer-events: none; opacity: 0.75; }
+    .gf-spinner {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--color-on-primary-muted); border-top-color: var(--color-on-primary);
+      animation: gf-spin 0.7s linear infinite;
+    }
+    @keyframes gf-spin { to { transform: rotate(360deg); } }
+
+    /* ---- 全局错误提示 ---- */
+    .gf-login__alert {
+      display: none; align-items: flex-start; gap: var(--space-2);
+      background: var(--color-error-bg); border-radius: var(--radius-card);
+      padding: var(--space-2) var(--space-3); margin-bottom: var(--space-4);
+      color: var(--color-error-text); font-size: 13px; line-height: 20px;
+    }
+    .gf-login__alert--show { display: flex; }
+    .gf-login__alert svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+
+    .gf-login__hint { margin-top: var(--space-6); font-size: 12px; color: var(--color-text-quaternary); text-align: center; line-height: 1.8; }
+
+    /* ============ 样式二：白底单栏登录卡 408 × 430 ============ */
+    .gf-login--plain { background: var(--color-white); }
+    .gf-login--plain .gf-login__card { width: 408px; height: 430px; padding: var(--space-8); box-shadow: var(--shadow-card); }
+    .gf-login--plain .gf-login__brand { display: none; }
+    .gf-login--plain .gf-login__panel { padding: 0; }
+    .gf-login--plain .gf-login__subtitle { display: none; }
+    .gf-login--plain .gf-login__hint { display: none; }
+
+    /* ============ 响应式：≤1200px 双栏降级为单栏 ============ */
+    @media (max-width: 1200px) {
+      .gf-login__card { width: 408px; height: 430px; padding: var(--space-8); box-shadow: var(--shadow-card); }
+      .gf-login__brand { display: none; }
+      .gf-login__panel { padding: 0; }
+      .gf-login__subtitle, .gf-login__hint { display: none; }
+    }
+    @media (max-width: 480px) {
+      .gf-login { padding: var(--space-4); }
+      .gf-login__card, .gf-login--plain .gf-login__card { width: 100%; height: auto; min-height: 430px; }
+      .gf-login__inner { width: 100%; }
+    }
+  </style>
+</head>
+<body data-page-node-id="FdMaN4iF3DyxTIeWvoVh2z">
+  <!-- 样式二时给本元素追加 class="gf-login--plain" -->
+  <main class="gf-login" id="loginRoot" data-page-node-id="8i8PHdWnnJ9GQqHScbGfAT">
+    <div class="gf-login__card" data-page-node-id="zzYadrXJgWOvtHUnjAEEtT">
+      <!-- ============ 左侧品牌区（样式二时整块移除） ============ -->
+      <aside class="gf-login__brand" data-page-node-id="EW0wDiCoGXyxMUOEPTYtdr">
+        <!-- 业务替换点：品牌标识与系统名 -->
+        <div class="gf-login__brand-logo" data-page-node-id="WhqBQpshOGNmLXhOJQHAbI">
+          <div class="gf-login__brand-mark" data-page-node-id="usWnKAM3bujRsc3HBWGmCC">广</div>
+          <span class="gf-login__brand-name" data-page-node-id="QBvLExutAFA05gtGqsBcyV">广发中后台系统</span>
+        </div>
+        <!-- 业务替换点：品牌插图（必须内联手绘 SVG，禁止外链图片或图标库） -->
+        <svg width="300" height="180" viewBox="0 0 300 180" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="品牌插图" data-page-node-id="UXvJ3GS6UUOGXt0L9v0ezW">
+          <rect x="8" y="18" width="284" height="146" rx="6" fill="var(--color-white)" stroke="var(--color-accent-6)" stroke-width="1.4" data-page-node-id="IN4VY92U72X6cm7l2AZdBv"/>
+          <path d="M28 128 L64 112 L100 118 L136 88 L172 96 L208 62 L244 52 L272 38" stroke="var(--color-primary)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="xrisLfYp2zixy9d3OiYEYd"/>
+          <path d="M28 128 L64 112 L100 118 L136 88 L172 96 L208 62 L244 52 L272 38 L272 150 L28 150 Z" fill="var(--color-primary)" fill-opacity="0.08" data-page-node-id="nrgGNFoSafKFZDo9lx3muZ"/>
+          <circle cx="136" cy="88" r="4" fill="var(--color-white)" stroke="var(--color-primary)" stroke-width="2" data-page-node-id="XSOh2QKGuegtIUyAGIaI10"/>
+          <circle cx="208" cy="62" r="4" fill="var(--color-white)" stroke="var(--color-primary)" stroke-width="2" data-page-node-id="GOTu5YZravZWk5Qt4gGpeC"/>
+          <circle cx="272" cy="38" r="5" fill="var(--color-primary)" data-page-node-id="exHSrn7SHBcxEcaIBweWOz"/>
+          <rect x="36" y="150" width="18" height="10" rx="2" fill="var(--color-accent-6)" data-page-node-id="Zq9SkmUqsREvyjLZHxwCK9"/>
+          <rect x="66" y="150" width="18" height="16" rx="2" fill="var(--color-accent-6)" data-page-node-id="ZBYV1BpDwTSLDL1YHqa72J"/>
+          <rect x="96" y="150" width="18" height="12" rx="2" fill="var(--color-accent-6)" data-page-node-id="MEkEQrShCfjGLHlH20pN0F"/>
+          <rect x="126" y="150" width="18" height="22" rx="2" fill="var(--color-accent-6)" data-page-node-id="F3Q6FFppA6OsjHGYf4JrsN"/>
+          <rect x="156" y="150" width="18" height="14" rx="2" fill="var(--color-accent-6)" data-page-node-id="MM0Uv4sryz1Tl4Uwhgl51B"/>
+        </svg>
+        <!-- 业务替换点：品牌标语 -->
+        <p class="gf-login__brand-slogan" data-page-node-id="fclvFGHenfX79rwqnXBuA3">一句话描述系统定位与核心能力</p>
+      </aside>
+
+      <!-- ============ 右侧表单区 ============ -->
+      <section class="gf-login__panel" data-page-node-id="89V8AF0UPlUbZBDaaE8ZDO">
+        <div class="gf-login__inner" data-page-node-id="1oCvhOkc1quYNcI0vTMbip">
+          <!-- 业务替换点：标题与副标题 -->
+          <h1 class="gf-login__title" data-page-node-id="xSCaAQDMAAF8A7pPSPu8fu">您好！欢迎登录</h1>
+          <p class="gf-login__subtitle" data-page-node-id="3ShHiVWgbTWhYJuHfKZLuz">请使用统一身份账号登录</p>
+
+          <div class="gf-login__alert" id="loginAlert" role="alert" data-page-node-id="tKRSqHsHUrE3dtZZEQdgQu">
+            <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="88Ect0JUEjVEIRW7NsO6CA">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.4" data-page-node-id="uS24Q4CeRcEYF5TPmt56yz"/>
+              <path d="M8 5V8.5M8 11V11.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="De6SatlsWMSBPJoijxhRVM"/>
+            </svg>
+            <span id="loginAlertText" data-page-node-id="xD6m9syA7zPcO4aRPQe9ln"></span>
+          </div>
+
+          <form id="loginForm" novalidate autocomplete="off" data-page-node-id="8xMcpWAGCRKYxsZOLnfmXI">
+            <!-- 用户名（前缀图标 16×16，left: 8px） -->
+            <div class="gf-field" id="fieldUser" data-page-node-id="T6WaXv59g2rVlvWfvQCUrH">
+              <svg class="gf-field__icon gf-field__icon--prefix" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="xZjJj2ncn3eprTsoNT1JyI">
+                <circle cx="8" cy="5.5" r="2.75" stroke="currentColor" stroke-width="1.4" data-page-node-id="Ue1m0oEMwAUsg6FNATL5tl"/>
+                <path d="M2.5 13.5C2.5 11.2909 4.96243 9.5 8 9.5C11.0376 9.5 13.5 11.2909 13.5 13.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="zSQmTlKXNLzmOmMOuv9Eqw"/>
+              </svg>
+              <input class="gf-field__input" type="text" id="username" placeholder="请输入用户名/工号" aria-label="用户名" data-page-node-id="kvEfs4ouWIKLPCEWaFrQQb" />
+              <p class="gf-field__error" id="userError" data-page-node-id="MjdTaBSX3PVegnJF5tU0VW"></p>
+            </div>
+
+            <!-- 密码（前缀图标 + 后缀可见性切换） -->
+            <div class="gf-field gf-field--suffix" id="fieldPwd" data-page-node-id="UtvCmS8wJYFl5Wui6NJKOZ">
+              <svg class="gf-field__icon gf-field__icon--prefix" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="8AolVIXD4aDEGI4f5tx3nU">
+                <rect x="3.5" y="7" width="9" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.4" data-page-node-id="xbDg3K5abZzeWm5QVbplXH"/>
+                <path d="M5.5 7V5.25C5.5 4.2835 6.5335 3.5 8 3.5C9.4665 3.5 10.5 4.2835 10.5 5.25V7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="Whs5c2bH2OK4vivKgwAa5w"/>
+                <path d="M8 9.5V11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" data-page-node-id="4zAJDLF29QkCKLmB9OClPi"/>
+              </svg>
+              <input class="gf-field__input" type="password" id="password" placeholder="请输入密码" aria-label="密码" data-page-node-id="8AuAmxghg2pyBDsNvupNzY" />
+              <button type="button" class="gf-field__icon gf-field__icon--suffix" id="pwdToggle" title="显示密码" aria-label="切换密码可见性" data-page-node-id="fd3uCxwY12Y23Ke4h1GlZ3">
+                <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" id="iconEye" data-page-node-id="TQVGpG6INRPrbbarmcB11S">
+                  <path d="M1.75 8C1.75 8 4 4.25 8 4.25C12 4.25 14.25 8 14.25 8C14.25 8 12 11.75 8 11.75C4 11.75 1.75 8 1.75 8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" data-page-node-id="ALDUR8iWqZi07aAGqzu0s7"/>
+                  <circle cx="8" cy="8" r="1.9" stroke="currentColor" stroke-width="1.4" data-page-node-id="Oyxsi0CjX2FsRuxNIKbskZ"/>
+                </svg>
+              </button>
+              <p class="gf-field__error" id="pwdError" data-page-node-id="b4FQRmoENnKDKyyJnBEv93"></p>
+            </div>
+
+            <div class="gf-login__assist" data-page-node-id="JbNh1p2LfGTFlHKwpDB5J3">
+              <label class="gf-check" data-page-node-id="hb5wVFGR4km7meKilTTuJF">
+                <input type="checkbox" class="gf-check__box" id="remember" data-page-node-id="aoDOcFkoNCZFzgYjLIWn3O" />
+                <span class="gf-check__label" data-page-node-id="WS2LO8rvOAcRVpxvPpPCti">记住密码</span>
+              </label>
+              <button type="button" class="gf-login__forgot" id="btnForgot" data-page-node-id="bPiJ708cFdRmB7YgAx9KZJ">忘记密码</button>
+            </div>
+
+            <button type="submit" class="gf-login__submit" id="btnSubmit" data-page-node-id="sdlSB6DFAosapFGYuqwDw6">登录</button>
+          </form>
+
+          <!-- 业务替换点：底部版权与浏览器建议 -->
+          <p class="gf-login__hint" data-page-node-id="spNdmFetXG5ZgwD8SXcLlJ">
+            建议使用 Chrome 90+ / Edge 90+ 浏览器，分辨率 1440 × 900 及以上<br data-page-node-id="80VX1hO6Tw2yLEfAo6pzHF">
+            © 2026 公司名称
+          </p>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var REMEMBER_KEY = 'gf_login_username';
+
+      var form = document.getElementById('loginForm');
+      var username = document.getElementById('username');
+      var password = document.getElementById('password');
+      var remember = document.getElementById('remember');
+      var btnSubmit = document.getElementById('btnSubmit');
+      var pwdToggle = document.getElementById('pwdToggle');
+      var iconEye = document.getElementById('iconEye');
+      var alertBox = document.getElementById('loginAlert');
+      var alertText = document.getElementById('loginAlertText');
+      var fieldUser = document.getElementById('fieldUser');
+      var fieldPwd = document.getElementById('fieldPwd');
+      var userError = document.getElementById('userError');
+      var pwdError = document.getElementById('pwdError');
+
+      var EYE_OFF = '<path d="M1.75 8C1.75 8 4 4.25 8 4.25C12 4.25 14.25 8 14.25 8C14.25 8 12 11.75 8 11.75C4 11.75 1.75 8 1.75 8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'
+        + '<path d="M2.5 13.5L13.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>';
+      var EYE_ON = '<path d="M1.75 8C1.75 8 4 4.25 8 4.25C12 4.25 14.25 8 14.25 8C14.25 8 12 11.75 8 11.75C4 11.75 1.75 8 1.75 8Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>'
+        + '<circle cx="8" cy="8" r="1.9" stroke="currentColor" stroke-width="1.4"/>';
+
+      /* ---------- 记住密码：仅回填用户名，不存储口令 ---------- */
+      try {
+        var saved = localStorage.getItem(REMEMBER_KEY);
+        if (saved) { username.value = saved; remember.checked = true; }
+      } catch (e) { /* 隐私模式下 localStorage 不可用，静默降级 */ }
+
+      /* ---------- 密码可见性切换 ---------- */
+      pwdToggle.addEventListener('click', function () {
+        var masked = password.type === 'password';
+        password.type = masked ? 'text' : 'password';
+        iconEye.innerHTML = masked ? EYE_OFF : EYE_ON;
+        this.setAttribute('title', masked ? '隐藏密码' : '显示密码');
+        password.focus();
+      });
+
+      function hideAlert() { alertBox.classList.remove('gf-login__alert--show'); }
+      function showAlert(msg) { alertText.textContent = msg; alertBox.classList.add('gf-login__alert--show'); }
+
+      username.addEventListener('input', function () { fieldUser.classList.remove('gf-field--error'); hideAlert(); });
+      password.addEventListener('input', function () { fieldPwd.classList.remove('gf-field--error'); hideAlert(); });
+
+      /* ---------- 提交：校验 → 加载态 → 业务替换点 ---------- */
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        hideAlert();
+        fieldUser.classList.remove('gf-field--error');
+        fieldPwd.classList.remove('gf-field--error');
+
+        var name = username.value.trim();
+        var pwd = password.value;
+        var ok = true;
+
+        if (!name) { fieldUser.classList.add('gf-field--error'); userError.textContent = '请输入用户名/工号'; ok = false; }
+        if (!pwd) { fieldPwd.classList.add('gf-field--error'); pwdError.textContent = '请输入密码'; ok = false; }
+        else if (pwd.length < 6) { fieldPwd.classList.add('gf-field--error'); pwdError.textContent = '密码长度不少于 6 位'; ok = false; }
+        if (!ok) return;
+
+        try {
+          if (remember.checked) localStorage.setItem(REMEMBER_KEY, name);
+          else localStorage.removeItem(REMEMBER_KEY);
+        } catch (err) { /* 忽略存储异常 */ }
+
+        btnSubmit.classList.add('gf-login__submit--loading');
+        btnSubmit.innerHTML = '<span class="gf-spinner"></span>登录中…';
+
+        /* ★ 业务替换点：替换为真实登录接口调用，成功后跳转首页 */
+        setTimeout(function () {
+          btnSubmit.classList.remove('gf-login__submit--loading');
+          btnSubmit.textContent = '登录';
+        }, 800);
+      });
+
+      /* ★ 业务替换点：忘记密码跳转地址 */
+      document.getElementById('btnForgot').addEventListener('click', function () {
+        showAlert('找回密码请联系系统管理员，或前往统一身份认证平台重置。');
+      });
+    })();
+  </script>
+</body>
+</html>

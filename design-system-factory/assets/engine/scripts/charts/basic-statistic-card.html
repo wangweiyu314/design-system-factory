@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基础指标卡 - 数据概览</title>
+  <style>
+    :root {
+      --color-primary: #2A6CDD;
+      --color-primary-hover: #1E5BBF;
+      --color-primary-active: #164A9E;
+      --color-success: #52C41A;
+      --color-warning: #FAAD14;
+      --color-error: #F5222D;
+      --color-nav: #0C1D43;
+      --color-bg-canvas: #F7F8FA;
+      --color-bg-card: #FFFFFF;
+      --color-border: #F0F2F5;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-heading: #13161B;
+      /* 涨跌色：境内业务习惯「涨红跌绿」，禁止直接引用功能色表达趋势 */
+      --color-up: #F5222D;
+      --color-down: #52C41A;
+      /* 数据可视化色（图表系列色），来源 foundation/tokens.md */
+      --chart-1: #2A6CDD;
+      --chart-2: #4E85E3;
+      --chart-3: #2CAA41;
+      --chart-5: #1D4C9B;
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.10);
+      --shadow-dropdown: 0 6px 16px rgba(0,0,0,0.12);
+      --space-1: 4px; --space-2: 8px; --space-3: 12px;
+      --space-4: 16px; --space-5: 20px; --space-6: 24px;
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', sans-serif;
+      --font-number: 'DIN Alternate', 'DIN', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg-canvas);
+      color: var(--color-text);
+      font-size: 14px;
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      padding: var(--space-6);
+    }
+
+    /* 标题区 */
+    .gf-section-title {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--color-text-heading);
+      line-height: 28px;
+      margin-bottom: var(--space-4);
+    }
+
+    /* 指标卡网格 */
+    .gf-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: var(--space-4);
+    }
+
+    /* 指标卡 */
+    .gf-stat-card {
+      background: var(--color-bg-card);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: var(--space-4) var(--space-6);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gf-stat-card__name {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--color-text-secondary);
+      line-height: 22px;
+      margin-bottom: var(--space-2);
+    }
+
+    .gf-stat-card__value {
+      display: flex;
+      align-items: baseline;
+      gap: var(--space-1);
+      line-height: 1;
+      margin-bottom: var(--space-2);
+    }
+
+    .gf-stat-card__number {
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--color-text-heading);
+      font-family: var(--font-number);
+      letter-spacing: 0.3px;
+    }
+
+    .gf-stat-card__unit {
+      font-size: 14px;
+      font-weight: 400;
+      color: var(--color-text-tertiary);
+    }
+
+    .gf-stat-card__trend {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--color-text-tertiary);
+      line-height: 20px;
+      margin-bottom: var(--space-2);
+      display: flex;
+      align-items: center;
+      gap: var(--space-1);
+    }
+
+    .gf-stat-card__trend-value--up {
+      color: var(--color-up);
+    }
+
+    .gf-stat-card__trend-value--down {
+      color: var(--color-down);
+    }
+
+    .gf-stat-card__trend-arrow {
+      width: 10px;
+      height: 10px;
+    }
+
+    /* 迷你图表 */
+    .gf-stat-card__chart {
+      width: 100%;
+      height: 72px;
+      display: block;
+      margin-top: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1 class="gf-section-title">数据概览</h1>
+
+  <div class="gf-stat-grid">
+    <!-- 卡1: 今日交易额 / 蓝色 -->
+    <div class="gf-stat-card">
+      <div class="gf-stat-card__name">今日交易额</div>
+      <div class="gf-stat-card__value">
+        <span class="gf-stat-card__number">¥1,286,540</span>
+      </div>
+      <div class="gf-stat-card__trend">
+        较昨日
+        <span class="gf-stat-card__trend-value--up">+12.5%</span>
+        <svg class="gf-stat-card__trend-arrow" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1.5L8.5 5.5H6.5V8.5H3.5V5.5H1.5L5 1.5Z" style="fill: var(--color-up);"/>
+        </svg>
+      </div>
+      <svg class="gf-stat-card__chart" viewBox="0 0 240 72" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sparkBlue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#2A6CDD" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#2A6CDD" stop-opacity="0.08"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,52 30,48 60,42 90,46 120,34 150,30 180,22 210,16 240,10 240,72 0,72" fill="url(#sparkBlue)"/>
+        <polyline points="0,52 30,48 60,42 90,46 120,34 150,30 180,22 210,16 240,10" fill="none" stroke="#2A6CDD" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- 卡2: 活跃用户数 / 绿色 -->
+    <div class="gf-stat-card">
+      <div class="gf-stat-card__name">活跃用户数</div>
+      <div class="gf-stat-card__value">
+        <span class="gf-stat-card__number">12,856</span>
+      </div>
+      <div class="gf-stat-card__trend">
+        较昨日
+        <span class="gf-stat-card__trend-value--down">-3.2%</span>
+        <svg class="gf-stat-card__trend-arrow" viewBox="0 0 10 10" fill="none">
+          <path d="M5 8.5L1.5 4.5H3.5V1.5H6.5V4.5H8.5L5 8.5Z" style="fill: var(--color-down);"/>
+        </svg>
+      </div>
+      <svg class="gf-stat-card__chart" viewBox="0 0 240 72" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sparkGreen" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#52C41A" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#52C41A" stop-opacity="0.08"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,40 30,36 60,44 90,32 120,38 150,28 180,34 210,26 240,30 240,72 0,72" fill="url(#sparkGreen)"/>
+        <polyline points="0,40 30,36 60,44 90,32 120,38 150,28 180,34 210,26 240,30" fill="none" stroke="#52C41A" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- 卡3: 新增客户 / 橙色 -->
+    <div class="gf-stat-card">
+      <div class="gf-stat-card__name">新增客户</div>
+      <div class="gf-stat-card__value">
+        <span class="gf-stat-card__number">328</span>
+        <span class="gf-stat-card__unit">人</span>
+      </div>
+      <div class="gf-stat-card__trend">
+        较昨日
+        <span class="gf-stat-card__trend-value--up">+8.6%</span>
+        <svg class="gf-stat-card__trend-arrow" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1.5L8.5 5.5H6.5V8.5H3.5V5.5H1.5L5 1.5Z" style="fill: var(--color-up);"/>
+        </svg>
+      </div>
+      <svg class="gf-stat-card__chart" viewBox="0 0 240 72" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sparkOrange" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FAAD14" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="#FAAD14" stop-opacity="0.08"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,30 30,40 60,28 90,46 120,36 150,50 180,34 210,28 240,20 240,72 0,72" fill="url(#sparkOrange)"/>
+        <polyline points="0,30 30,40 60,28 90,46 120,36 150,50 180,34 210,28 240,20" fill="none" stroke="#FAAD14" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <!-- 卡4: 转化率 / 紫色 -->
+    <div class="gf-stat-card">
+      <div class="gf-stat-card__name">转化率</div>
+      <div class="gf-stat-card__value">
+        <span class="gf-stat-card__number">68.5</span>
+        <span class="gf-stat-card__unit">%</span>
+      </div>
+      <div class="gf-stat-card__trend">
+        较昨日
+        <span class="gf-stat-card__trend-value--up">+2.1%</span>
+        <svg class="gf-stat-card__trend-arrow" viewBox="0 0 10 10" fill="none">
+          <path d="M5 1.5L8.5 5.5H6.5V8.5H3.5V5.5H1.5L5 1.5Z" style="fill: var(--color-up);"/>
+        </svg>
+      </div>
+      <svg class="gf-stat-card__chart" viewBox="0 0 240 72" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sparkPurple" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--chart-5)" stop-opacity="0.22"/>
+            <stop offset="100%" stop-color="var(--chart-5)" stop-opacity="0.08"/>
+          </linearGradient>
+        </defs>
+        <polygon points="0,50 30,44 60,48 90,36 120,32 150,28 180,24 210,18 240,14 240,72 0,72" fill="url(#sparkPurple)"/>
+        <polyline points="0,50 30,44 60,48 90,36 120,32 150,28 180,24 210,18 240,14" fill="none" style="stroke: var(--chart-5);" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      </svg>
+    </div>
+  </div>
+</body>
+</html>

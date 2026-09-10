@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>固定操作列表格模板 - 广发中后台设计系统</title>
+  <!--
+    ============================================================
+    模板：固定操作列表格（表格卡完整节奏）
+    规范：components/data-display.md + business.md §1.11 + pages/list-page.md
+    版本：design-specs v2.4
+
+    强约束（务必保留，改动即踩坑）：
+      #11 表格卡内部节奏：水平 24px 内容线、垂直 16px、首末列 24px
+      #12 内置分页 margin、卡片 padding-bottom 兜底，分页禁止贴底
+      #18 固定操作列必须 border-collapse: separate，否则 td 的 box-shadow 不渲染
+      #23 行背景只表达交互状态，禁止业务语义整行铺色
+
+    使用方式：复制本文件 → 替换「业务替换点」→ 保留类名与 Token
+    ============================================================
+  -->
+  <style>
+    :root {
+      --color-primary: #2A6CDD;
+      --color-primary-hover: #1E5BBF;
+      --color-primary-light: rgba(42, 108, 221, 0.1);
+      --color-error: #F5222D;
+      --color-error-text: #C80000;
+      --color-error-bg: #FEEBEC;
+      --color-success-text: #2CAA41;
+      --color-success-bg: #E6F6EB;
+      --color-warning-text: #E97D30;
+      --color-warning-bg: #FCEFE6;
+      --color-info-text: #2A6CDD;
+      --color-info-bg: #E6F4FE;
+      --color-bg-canvas: #F7F8FA;
+      --color-bg-card: #FFFFFF;
+      --color-border: #F0F2F5;
+      --color-border-secondary: #E6EAF0;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-quaternary: #C8C9CC;
+      --color-text-heading: #13161B;
+      --color-table-header-bg: #F7F8FA;
+      --color-table-row-hover: #F5F5F5;
+      --color-table-action: #2A6CDD;
+      --color-table-action-hover: #1E5BBF;
+      --color-table-divider: #E6EAF0;
+      --color-table-zebra: #FAFCFF;
+      --tag-blue-bg: #EAF0FC;
+      --tag-blue-text: #2A6CDD;
+      --tag-danger-bg: #FAE6E6;
+      --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.10);
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px;
+      --space-4: 16px; --space-5: 20px; --space-6: 24px;
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      --font-number: 'DIN Alternate', 'DIN', 'SF Pro Display', 'Helvetica Neue', sans-serif;
+          --color-white: #FFFFFF;
+      --shadow-fixed-col: -4px 0 8px rgba(0, 0, 0, 0.06);
+      --space-16: 64px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: var(--font-family);
+      background: var(--color-bg-canvas);
+      color: var(--color-text);
+      font-size: 14px; line-height: 1.5; padding: var(--space-6);
+      -webkit-font-smoothing: antialiased;
+    }
+    button, input, select { font-family: var(--font-family); }
+
+    /* ============ 页面标题（PageHeader 唯一来源） ============ */
+    .gf-page-header { margin-bottom: var(--space-4); }
+    .gf-page-header__title { font-size: 20px; font-weight: 600; color: var(--color-text-heading); line-height: 28px; }
+    .gf-page-header__desc { font-size: 13px; color: var(--color-text-tertiary); margin-top: var(--space-1); }
+
+    /* ============ 筛选卡（独立白卡，16px 24px） ============ */
+    .gf-filter-card {
+      background: var(--color-bg-card); border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card); padding: var(--space-4) var(--space-6); margin-bottom: var(--space-4);
+    }
+    .gf-filter { display: flex; flex-wrap: wrap; gap: var(--space-4); align-items: center; }
+    .gf-filter__item { display: flex; align-items: center; gap: var(--space-2); }
+    .gf-filter__label { font-size: 13px; font-weight: 500; color: var(--color-text-tertiary); white-space: nowrap; }
+    .gf-filter__actions { margin-left: auto; display: flex; gap: var(--space-2); }
+    .gf-input {
+      width: 180px; height: 32px; border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+      padding: 0 var(--space-3); font-size: 13px; color: var(--color-text); background: var(--color-bg-card);
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .gf-input::placeholder { color: var(--color-text-quaternary); }
+    .gf-input:hover { border-color: var(--color-border-secondary); }
+    .gf-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-light); }
+    .gf-select {
+      height: 32px; min-width: 160px; border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+      padding: 0 var(--space-3); font-size: 13px; color: var(--color-text); background: var(--color-bg-card);
+      outline: none; cursor: pointer;
+    }
+    .gf-select:focus { border-color: var(--color-primary); }
+
+    /* ============ 按钮 ============ */
+    .gf-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1);
+      height: 32px; padding: 0 var(--space-4); font-size: 14px;
+      border: 1px solid var(--color-primary); background: var(--color-primary); color: var(--color-white);
+      border-radius: var(--radius-btn); cursor: pointer; white-space: nowrap; line-height: 1;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .gf-btn:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+    .gf-btn__icon { width: 14px; height: 14px; flex-shrink: 0; }
+    .gf-btn--secondary { border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text); }
+    .gf-btn--secondary:hover { border-color: var(--color-primary); color: var(--color-primary); background: var(--color-bg-card); }
+    .gf-btn--danger { border: 1px solid var(--color-error-text); background: var(--color-bg-card); color: var(--color-error-text); }
+    .gf-btn--danger:hover { border-color: var(--color-error); color: var(--color-error); background: var(--tag-danger-bg); }
+    .gf-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    /* ============ 表格卡 ============ */
+    /* flow-root 建立 BFC：阻止分页器 margin 与卡片外边距折叠穿透，保证底部留白留在卡片内 */
+    .gf-table-wrap {
+      display: flow-root;
+      background: var(--color-bg-card); border-radius: var(--radius-card); box-shadow: var(--shadow-card);
+    }
+
+    /* 工具栏（表格卡首个子元素，12px 24px 变体） */
+    .gf-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: var(--space-3) var(--space-6); flex-wrap: wrap; gap: var(--space-3);
+    }
+    .gf-toolbar__left { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+    .gf-toolbar__right { display: flex; align-items: center; gap: var(--space-3); }
+    .gf-toolbar__count { font-size: 13px; color: var(--color-text-tertiary); white-space: nowrap; }
+    .gf-toolbar__count strong { color: var(--color-primary); font-weight: 600; font-family: var(--font-number); }
+
+    .gf-table-scroll { overflow-x: auto; overflow-y: hidden; }
+
+    /* 强约束 #18：固定操作列必须用 separate，collapse 下 td 的 box-shadow 不渲染 */
+    .gf-table { width: 100%; min-width: 1080px; border-collapse: separate; border-spacing: 0; font-size: 14px; }
+    .gf-table thead th {
+      background: var(--color-table-header-bg); font-weight: 500; color: var(--color-text);
+      text-align: left; padding: 0 var(--space-4); height: 52px; white-space: nowrap;
+      border-bottom: 1px solid var(--color-table-divider);
+    }
+    .gf-table tbody td {
+      padding: 0 var(--space-4); height: 52px; color: var(--color-text);
+      border-bottom: 1px solid var(--color-table-divider); vertical-align: middle; white-space: nowrap;
+    }
+    /* 首末列 24px 内容线 */
+    .gf-table thead th:first-child, .gf-table tbody td:first-child { padding-left: var(--space-6); }
+    .gf-table thead th:last-child, .gf-table tbody td:last-child { padding-right: var(--space-6); }
+    .gf-table tbody tr:last-child td { border-bottom: none; }
+    .gf-table tbody tr:nth-child(even) { background: var(--color-table-zebra); }
+    .gf-table tbody tr:hover { background: var(--color-table-row-hover); }
+
+    .gf-table__col-check { width: 48px; text-align: center; }
+    .gf-checkbox { width: 16px; height: 16px; accent-color: var(--color-primary); cursor: pointer; vertical-align: middle; }
+    .gf-table .number-col { font-family: var(--font-number); letter-spacing: 0.2px; }
+    .gf-table .amount-col { text-align: right; }
+
+    /* 标签（22px 高，五色 Token） */
+    .gf-tag {
+      display: inline-flex; align-items: center; height: 22px; padding: 0 var(--space-2);
+      font-size: 12px; line-height: 1; border-radius: var(--radius-btn); white-space: nowrap;
+    }
+    .gf-tag--primary { background: var(--tag-blue-bg); color: var(--tag-blue-text); }
+    .gf-tag--success { background: var(--color-success-bg); color: var(--color-success-text); }
+    .gf-tag--warning { background: var(--color-warning-bg); color: var(--color-warning-text); }
+    .gf-tag--error { background: var(--color-error-bg); color: var(--color-error-text); }
+    .gf-tag--info { background: var(--color-info-bg); color: var(--color-info-text); }
+
+    /* 固定操作列（sticky 右固定 + 左侧分隔阴影） */
+    .gf-table__col-action {
+      position: sticky; right: 0; z-index: 1;
+      background: var(--color-bg-card);
+      box-shadow: var(--shadow-fixed-col);
+    }
+    .gf-table thead .gf-table__col-action { z-index: 2; background: var(--color-table-header-bg); }
+    /* 固定列需跟随行背景变化，避免斑马纹 / hover 下出现色块断层 */
+    .gf-table tbody tr:nth-child(even) .gf-table__col-action { background: var(--color-table-zebra); }
+    .gf-table tbody tr:hover .gf-table__col-action { background: var(--color-table-row-hover); }
+
+    .gf-table-action { display: flex; align-items: center; gap: var(--space-2); }
+    .gf-link {
+      color: var(--color-table-action); text-decoration: none; font-size: 14px; cursor: pointer;
+      background: none; border: none; padding: 2px var(--space-2);
+      transition: color 0.2s, background 0.2s; white-space: nowrap; border-radius: var(--radius-btn); line-height: 20px;
+    }
+    .gf-link:hover { color: var(--color-table-action-hover); background: var(--color-primary-light); }
+    .gf-link--danger { color: var(--color-error-text); }
+    .gf-link--danger:hover { color: var(--color-error); background: var(--tag-danger-bg); }
+
+    /* 空状态 */
+    .gf-empty { padding: var(--space-16) 0; text-align: center; color: var(--color-text-tertiary); font-size: 13px; }
+
+    /* 分页器（内置分页：margin 承担与表格间距，卡片 padding-bottom 承担底部留白） */
+    .gf-pagination {
+      display: flex; align-items: center; justify-content: flex-end; gap: var(--space-1);
+      margin: var(--space-4) var(--space-6) 0; padding-bottom: var(--space-4); flex-wrap: wrap;
+    }
+    .gf-pagination__total { font-size: 13px; color: var(--color-text-secondary); margin-right: var(--space-3); }
+    .gf-pagination__size {
+      height: 32px; border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+      background: var(--color-bg-card); color: var(--color-text); font-size: 13px;
+      padding: 0 var(--space-2); margin-right: var(--space-2); outline: none; cursor: pointer;
+    }
+    .gf-pagination__btn, .gf-pagination__item {
+      min-width: 32px; height: 32px; padding: 0 var(--space-2);
+      border: 1px solid var(--color-border); background: var(--color-bg-card); color: var(--color-text);
+      font-size: 14px; border-radius: var(--radius-btn); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-family: var(--font-number); transition: border-color 0.2s, color 0.2s;
+    }
+    .gf-pagination__btn:hover:not(.gf-pagination__btn--disabled),
+    .gf-pagination__item:hover { border-color: var(--color-primary); color: var(--color-primary); }
+    .gf-pagination__btn--disabled { color: var(--color-text-tertiary); cursor: not-allowed; }
+    .gf-pagination__item--active { background: var(--color-primary); border-color: var(--color-primary); color: var(--color-white); }
+    .gf-pagination__item--active:hover { color: var(--color-white); }
+    .gf-pagination__jump {
+      font-size: 13px; color: var(--color-text-secondary); margin-left: var(--space-3);
+      display: inline-flex; align-items: center; gap: var(--space-1);
+    }
+    .gf-pagination__jump-input {
+      width: 48px; height: 32px; border: 1px solid var(--color-border); border-radius: var(--radius-btn);
+      text-align: center; font-size: 14px; color: var(--color-text); outline: none; font-family: var(--font-number);
+    }
+    .gf-pagination__jump-input:focus { border-color: var(--color-primary); }
+  </style>
+</head>
+<body>
+  <div class="gf-page-header">
+    <h1 class="gf-page-header__title">列表页标题</h1>
+    <p class="gf-page-header__desc">页面说明文字，简要描述本页用途与操作指引</p>
+  </div>
+
+  <!-- ============ 筛选卡 ============ -->
+  <section class="gf-filter-card" aria-label="筛选条件">
+    <div class="gf-filter">
+      <!-- 业务替换点：筛选项（≥5 项时改用 QueryFilter，见 data-entry.md） -->
+      <div class="gf-filter__item">
+        <label class="gf-filter__label" for="filterName">名称</label>
+        <input class="gf-input" type="text" id="filterName" placeholder="请输入名称" />
+      </div>
+      <div class="gf-filter__item">
+        <label class="gf-filter__label" for="filterStatus">状态</label>
+        <select class="gf-select" id="filterStatus">
+          <option value="">全部</option>
+          <option value="pending">待处理</option>
+          <option value="done">已完成</option>
+        </select>
+      </div>
+      <div class="gf-filter__actions">
+        <button class="gf-btn" id="btnQuery">查询</button>
+        <button class="gf-btn gf-btn--secondary" id="btnReset">重置</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 表格卡 ============ -->
+  <section class="gf-table-wrap" aria-label="数据列表">
+    <!-- 工具栏 -->
+    <div class="gf-toolbar">
+      <div class="gf-toolbar__left">
+        <!-- 业务替换点：主操作按钮 -->
+        <button class="gf-btn">新增</button>
+        <button class="gf-btn gf-btn--secondary">导出</button>
+      </div>
+      <div class="gf-toolbar__right">
+        <span class="gf-toolbar__count">已选择 <strong id="toolbarCount">0</strong> 项</span>
+        <button class="gf-btn gf-btn--danger" id="btnBatchDelete" disabled>批量删除</button>
+      </div>
+    </div>
+
+    <!-- 表格（横向滚动隔离） -->
+    <div class="gf-table-scroll">
+      <table class="gf-table">
+        <thead>
+          <tr>
+            <th class="gf-table__col-check"><input type="checkbox" class="gf-checkbox" id="checkAll" aria-label="全选" /></th>
+            <!-- 业务替换点：列定义；金额列用 class="number-col amount-col" 右对齐 -->
+            <th>序号</th>
+            <th>名称</th>
+            <th>类型</th>
+            <th>日期</th>
+            <th class="amount-col">金额（元）</th>
+            <th>状态</th>
+            <th class="gf-table__col-action">操作</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="gf-empty" id="tableEmpty" style="display: none;">暂无数据</div>
+    </div>
+
+    <!-- 分页器 -->
+    <div class="gf-pagination">
+      <span class="gf-pagination__total" id="pageTotal">共 0 条，每页</span>
+      <select class="gf-pagination__size" id="pageSize" aria-label="每页条数">
+        <option value="10">10条</option>
+        <option value="20" selected>20条</option>
+        <option value="50">50条</option>
+      </select>
+      <button class="gf-pagination__btn" id="pagePrev" aria-label="上一页">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 3L4 6L7 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="gf-pagination__pages" id="pageItems" style="display: inline-flex; gap: 4px;"></div>
+      <button class="gf-pagination__btn" id="pageNext" aria-label="下一页">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M5 3L8 6L5 9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <span class="gf-pagination__jump">
+        跳至 <input class="gf-pagination__jump-input" type="text" value="1" id="pageJump" aria-label="跳转页码" /> 页
+      </span>
+    </div>
+  </section>
+
+  <script>
+    (function () {
+      /* ================= 业务替换点：数据源 ================= */
+      var mockRows = [
+        { name: '示例数据一', type: '类型A', date: '2026-08-01', amount: '1,256,000.00', status: '待处理' },
+        { name: '示例数据二', type: '类型B', date: '2026-08-02', amount: '512,400.00', status: '已完成' },
+        { name: '示例数据三', type: '类型A', date: '2026-08-03', amount: '1,864,000.00', status: '待处理' },
+        { name: '示例数据四', type: '类型C', date: '2026-08-05', amount: '251,800.00', status: '已完成' },
+        { name: '示例数据五', type: '类型B', date: '2026-08-08', amount: '2,350,000.00', status: '待处理' }
+      ];
+
+      /* ================= 分页状态 ================= */
+      var pageSize = 20;
+      var currentPage = 1;
+      var rows = mockRows.slice();
+
+      var tbody = document.getElementById('tableBody');
+      var tableEmpty = document.getElementById('tableEmpty');
+      var checkAll = document.getElementById('checkAll');
+      var toolbarCount = document.getElementById('toolbarCount');
+      var btnBatchDelete = document.getElementById('btnBatchDelete');
+      var pageItems = document.getElementById('pageItems');
+      var pagePrev = document.getElementById('pagePrev');
+      var pageNext = document.getElementById('pageNext');
+      var pageTotal = document.getElementById('pageTotal');
+      var pageJump = document.getElementById('pageJump');
+
+      function esc(text) {
+        var div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+      function statusTag(status) {
+        if (status === '待处理') return 'gf-tag--warning';
+        if (status === '已完成') return 'gf-tag--success';
+        return 'gf-tag--info';
+      }
+      function totalPages() {
+        return Math.max(1, Math.ceil(rows.length / pageSize));
+      }
+      function pageRows() {
+        var start = (currentPage - 1) * pageSize;
+        return rows.slice(start, start + pageSize);
+      }
+
+      function renderRows() {
+        var list = pageRows();
+        tbody.innerHTML = list.map(function (r, i) {
+          return '<tr>' +
+            '<td class="gf-table__col-check"><input type="checkbox" class="gf-checkbox js-row-check" aria-label="选择第' + (i + 1) + '行" /></td>' +
+            '<td class="number-col">' + ((currentPage - 1) * pageSize + i + 1) + '</td>' +
+            '<td>' + esc(r.name) + '</td>' +
+            '<td>' + esc(r.type) + '</td>' +
+            '<td class="number-col">' + esc(r.date) + '</td>' +
+            '<td class="number-col amount-col">' + esc(r.amount) + '</td>' +
+            '<td><span class="gf-tag ' + statusTag(r.status) + '">' + esc(r.status) + '</span></td>' +
+            '<td class="gf-table__col-action"><div class="gf-table-action">' +
+            '<button class="gf-link js-edit">编辑</button>' +
+            '<button class="gf-link gf-link--danger js-del">删除</button>' +
+            '</div></td>' +
+            '</tr>';
+        }).join('');
+        tableEmpty.style.display = list.length ? 'none' : 'block';
+        syncSelection();
+      }
+
+      function renderPagination() {
+        var total = totalPages();
+        pageTotal.textContent = '共 ' + rows.length + ' 条，每页';
+        var html = '';
+        for (var p = 1; p <= total; p++) {
+          html += '<button class="gf-pagination__item' + (p === currentPage ? ' gf-pagination__item--active' : '') +
+            '" data-page="' + p + '">' + p + '</button>';
+        }
+        pageItems.innerHTML = html;
+        pagePrev.classList.toggle('gf-pagination__btn--disabled', currentPage <= 1);
+        pageNext.classList.toggle('gf-pagination__btn--disabled', currentPage >= total);
+        pageJump.value = currentPage;
+      }
+
+      /* 表头三态复选 + 计数同步 */
+      function syncSelection() {
+        var checks = tbody.querySelectorAll('.js-row-check');
+        var n = tbody.querySelectorAll('.js-row-check:checked').length;
+        checkAll.checked = checks.length > 0 && n === checks.length;
+        checkAll.indeterminate = n > 0 && n < checks.length;
+        toolbarCount.textContent = n;
+        btnBatchDelete.disabled = n === 0;
+      }
+
+      function render() { renderRows(); renderPagination(); }
+
+      /* ---------- 交互：选择 ---------- */
+      tbody.addEventListener('change', function (e) {
+        if (e.target.classList.contains('js-row-check')) syncSelection();
+      });
+      checkAll.addEventListener('change', function () {
+        tbody.querySelectorAll('.js-row-check').forEach(function (c) { c.checked = checkAll.checked; });
+        syncSelection();
+      });
+
+      /* ---------- 交互：行内操作（事件委托） ---------- */
+      tbody.addEventListener('click', function (e) {
+        var btn = e.target.closest('button');
+        if (!btn) return;
+        var tr = btn.closest('tr');
+        var index = Array.prototype.indexOf.call(tbody.children, tr);
+        var realIndex = (currentPage - 1) * pageSize + index;
+        if (btn.classList.contains('js-edit')) {
+          /* 业务替换点：编辑动作 */
+          window.alert('编辑：' + rows[realIndex].name);
+        } else if (btn.classList.contains('js-del')) {
+          if (window.confirm('确认删除该条记录？')) {
+            rows.splice(realIndex, 1);
+            if (currentPage > totalPages()) currentPage = totalPages();
+            render();
+          }
+        }
+      });
+
+      /* ---------- 交互：批量删除 ---------- */
+      btnBatchDelete.addEventListener('click', function () {
+        if (!window.confirm('确认删除已选中的记录？')) return;
+        var keep = [];
+        tbody.querySelectorAll('tr').forEach(function (tr, i) {
+          var cb = tr.querySelector('.js-row-check');
+          if (!cb || !cb.checked) keep.push(pageRows()[i]);
+        });
+        /* 保留未选中页的数据 */
+        var start = (currentPage - 1) * pageSize;
+        rows = rows.slice(0, start).concat(keep).concat(rows.slice(start + pageRows().length));
+        if (currentPage > totalPages()) currentPage = totalPages();
+        render();
+      });
+
+      /* ---------- 交互：分页 ---------- */
+      function gotoPage(p) {
+        var total = totalPages();
+        currentPage = Math.min(Math.max(1, p), total);
+        render();
+      }
+      pageItems.addEventListener('click', function (e) {
+        var item = e.target.closest('.gf-pagination__item');
+        if (item) gotoPage(parseInt(item.dataset.page, 10));
+      });
+      pagePrev.addEventListener('click', function () { gotoPage(currentPage - 1); });
+      pageNext.addEventListener('click', function () { gotoPage(currentPage + 1); });
+      document.getElementById('pageSize').addEventListener('change', function () {
+        pageSize = parseInt(this.value, 10);
+        currentPage = 1;
+        render();
+      });
+      pageJump.addEventListener('change', function () { gotoPage(parseInt(this.value, 10) || 1); });
+
+      /* ---------- 交互：查询 / 重置 ---------- */
+      document.getElementById('btnQuery').addEventListener('click', function () {
+        var name = document.getElementById('filterName').value.trim();
+        var status = document.getElementById('filterStatus').value;
+        rows = mockRows.filter(function (r) {
+          return (!name || r.name.indexOf(name) !== -1) &&
+                 (!status || r.status === (status === 'pending' ? '待处理' : '已完成'));
+        });
+        currentPage = 1;
+        render();
+      });
+      document.getElementById('btnReset').addEventListener('click', function () {
+        document.getElementById('filterName').value = '';
+        document.getElementById('filterStatus').value = '';
+        rows = mockRows.slice();
+        currentPage = 1;
+        render();
+      });
+
+      render();
+    })();
+  </script>
+</body>
+</html>

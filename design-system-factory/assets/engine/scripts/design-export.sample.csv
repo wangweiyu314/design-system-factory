@@ -1,0 +1,16 @@
+﻿name,value,opacity
+--color-primary,#2A6CDD,
+--color-primary-hover,#1E5BBF,
+--color-error,#F5222D,
+--color-up,#F5222D,
+--color-down,#52C41A,
+--color-text,#313133,
+--color-bg-canvas,#F7F8FA,
+--color-mask,#000000,0.6
+--space-4,16px,
+--header-height,56px,
+--sidebar-width,200px,
+--floating-header-height,52px,
+--floating-drawer-header-height,56px,
+--modal-form-width,640px,
+--drawer-detail-width,480px,

@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="pcLkHEMRsxA0pEAePCarn4">
+<head data-page-node-id="yC5JVW1nJmYKYFICxz15bP">
+  <meta charset="UTF-8" data-page-node-id="aNZvNHP5OCoGlPniX3GcUq">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="s9BSSwgfoMt6oEGKFHrACa">
+  <title>抽屉模板 - 广发中后台设计系统</title>
+  <!--
+    ============================================================
+    模板：抽屉 Drawer（自定义固定顶部工作栏）
+    规范：components/feedback.md §2 + §Drawer 顶部工作栏规范 + foundation/tokens.md
+    版本：design-specs v2.6
+
+    结构（强制）：
+      .gf-drawer__header  高度 --floating-drawer-header-height(56px) / padding 0 24px / 底分割线
+                          左侧 = 关闭按钮 + 标题；右侧 = 取消 / 确定
+      .gf-drawer__body    padding 24px / 唯一滚动区
+      桌面端默认【不生成】footer —— 操作按钮放在 header 右侧
+
+    两档宽度（禁止自由数值）：
+      --drawer-detail-width  480px  信息详情、只读预览
+      --drawer-form-width    560px  单列垂直表单
+
+    必做替换（搜索「业务替换点」）：
+      1. 标题文案 .gf-drawer__title
+      2. header 右侧按钮文案与回调（确定 / 取消）
+      3. body 内容（描述列表 / 表单字段）
+      4. 仅在移动端、强流程或明确要求时才加 footer
+
+    强约束（改动即踩坑）：
+      · 禁用默认 title / closable，一律用自定义 header（默认 header 结构易产生对齐偏差）
+      · header 必须 flex: 0 0 56px，禁止随内容伸缩
+      · body 是唯一滚动区，禁止把 header / 操作区卷进去
+      · 不要在 body 顶部再重复写大标题
+      · 不要把内容整体再包一层带 24px padding 的内层白卡（会与 body padding 叠加错位）
+      · 图标必须内联 SVG，禁止图标库、图标字体、外链图片
+    ============================================================
+  -->
+  <style>
+    :root {
+      /* ---- 品牌与功能色（取值唯一来源：foundation/tokens.md） ---- */
+      --color-primary: #2A6CDD;
+      --color-primary-hover: #1E5BBF;
+      --color-primary-active: #164A9E;
+      --color-primary-light: rgba(42, 108, 221, 0.1);
+      --color-primary-focus: rgba(42, 108, 221, 0.2);
+      --color-error: #F5222D;
+      --color-error-text: #C80000;
+      --color-on-primary: #FFFFFF;
+      /* ---- 中性色 ---- */
+      --color-white: #FFFFFF;
+      --color-bg-canvas: #F7F8FA;
+      --color-bg-card: #FFFFFF;
+      --color-bg-card-inner: #F7F8FA;
+      --color-text: #313133;
+      --color-text-secondary: #67696E;
+      --color-text-tertiary: #939599;
+      --color-text-quaternary: #C8C9CC;
+      --color-text-heading: #13161B;
+      --color-border: #F0F2F5;
+      --color-border-secondary: #E6EAF0;
+      --color-border-strong: #D7DCE0;
+      /* ---- 标签色（详情抽屉状态展示用） ---- */
+      --tag-blue-bg: #EAF0FC;
+      --tag-blue-text: #2A6CDD;
+      /* ---- 浮层遮罩与尺寸 ---- */
+      --color-mask: rgba(0, 0, 0, 0.6);
+      --drawer-detail-width: 480px;
+      --drawer-form-width: 560px;
+      --floating-drawer-header-height: 56px;
+      --floating-content-padding: 24px;
+      /* ---- 圆角 / 阴影 / 间距 / 字号 / 动效 ---- */
+      --radius-btn: 2px;
+      --radius-card: 4px;
+      --shadow-medium: 0px 6px 16px rgba(0, 0, 0, 0.12);
+      --space-1: 4px;
+      --space-2: 8px;
+      --space-3: 12px;
+      --space-4: 16px;
+      --space-6: 24px;
+      --space-8: 32px;
+      --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      --font-size-body: 14px;
+      --font-size-body-lg: 16px;
+      --font-size-body-sm: 12px;
+      --line-height-body: 1.5em;
+      --transition-fast: 200ms ease-in-out;
+      --transition-normal: 300ms ease-in-out;
+      --z-index-nav-popup: 1100;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: var(--space-8);
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      line-height: var(--line-height-body);
+      color: var(--color-text);
+      background: var(--color-bg-canvas);
+    }
+
+    /* ============================================================
+       演示用触发区（业务接入时删除）
+       ============================================================ */
+    .demo-launch { max-width: 800px; margin: 0 auto; }
+    .demo-launch h1 { font-size: var(--font-size-body-lg); font-weight: 500; color: var(--color-text-heading); margin: 0 0 var(--space-4); }
+    .demo-launch__row { display: flex; gap: var(--space-3); flex-wrap: wrap; }
+
+    /* ============================================================
+       按钮（组件级，业务可直接复用）
+       语义：裸 .gf-btn = 主按钮，--secondary = 次按钮，--danger = 危险
+       规范：components/basic.md §按钮 CSS 类语义（强制）
+       禁止再写 .gf-btn--primary（历史上语义相反，会导致宿主页面按钮被覆盖）
+       ============================================================ */
+    .gf-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: var(--space-1);
+      min-width: 76px; height: 32px;
+      padding: 0 var(--space-4);
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      line-height: 1;
+      border-radius: var(--radius-btn);
+      border: 1px solid var(--color-primary);
+      background: var(--color-primary);
+      color: var(--color-on-primary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all var(--transition-fast);
+    }
+    .gf-btn:hover { background: var(--color-primary-hover); border-color: var(--color-primary-hover); }
+    .gf-btn:active { background: var(--color-primary-active); border-color: var(--color-primary-active); }
+    .gf-btn:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-primary-focus); }
+    .gf-btn:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+
+    .gf-btn--secondary {
+      background: var(--color-bg-card);
+      border-color: var(--color-border-strong);
+      color: var(--color-text);
+    }
+    .gf-btn--secondary:hover { border-color: var(--color-primary); color: var(--color-primary); }
+
+    .gf-btn--danger {
+      background: var(--color-error);
+      border-color: var(--color-error);
+      color: var(--color-on-primary);
+    }
+    .gf-btn--danger:hover { background: var(--color-error-text); border-color: var(--color-error-text); color: var(--color-on-primary); }
+
+    /* ============================================================
+       Drawer 遮罩与容器
+       ============================================================ */
+    .gf-drawer-mask {
+      position: fixed;
+      inset: 0;
+      z-index: var(--z-index-nav-popup);
+      display: flex;
+      justify-content: flex-end;              /* 右侧滑出 */
+      background: var(--color-mask);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity var(--transition-normal), visibility var(--transition-normal);
+    }
+    .gf-drawer-mask.is-open { opacity: 1; visibility: visible; }
+
+    .gf-drawer {
+      display: flex;
+      flex-direction: column;
+      width: var(--drawer-form-width);
+      max-width: 80vw;                        /* 视口兜底 */
+      height: 100%;
+      background: var(--color-white);
+      border-radius: var(--radius-card) 0 0 var(--radius-card);
+      box-shadow: var(--shadow-medium);
+      transform: translateX(100%);
+      transition: transform var(--transition-normal);
+    }
+    .gf-drawer-mask.is-open .gf-drawer { transform: translateX(0); }
+
+    /* 两档宽度：通过修饰类切换，禁止写死 width */
+    .gf-drawer--detail { width: var(--drawer-detail-width); }
+    .gf-drawer--form   { width: var(--drawer-form-width); }
+
+    /* ---- 自定义固定工作栏（禁用默认 title / closable） ---- */
+    .gf-drawer__header {
+      flex: 0 0 var(--floating-drawer-header-height);
+      height: var(--floating-drawer-header-height);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      padding: 0 var(--floating-content-padding);
+      border-bottom: 1px solid var(--color-border-secondary);
+    }
+    .gf-drawer__header-side { display: flex; align-items: center; gap: var(--space-2); }
+
+    .gf-drawer__close {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px; height: 24px;
+      padding: 0;
+      border: none;
+      background: transparent;
+      color: var(--color-text);
+      cursor: pointer;
+      border-radius: var(--radius-btn);
+      transition: background var(--transition-fast);
+    }
+    .gf-drawer__close:hover { background: var(--color-border); }
+    .gf-drawer__close:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--color-primary-focus); }
+
+    .gf-drawer__title {
+      margin: 0;
+      font-size: var(--font-size-body-lg);
+      font-weight: 500;
+      color: var(--color-text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ---- 主体：唯一滚动区 ---- */
+    .gf-drawer__body {
+      flex: 1 1 auto;
+      padding: var(--floating-content-padding);
+      overflow: auto;
+    }
+
+    /* ============================================================
+       描述列表（详情抽屉用）
+       ============================================================ */
+    .gf-desc { display: grid; grid-template-columns: 96px 1fr; row-gap: var(--space-4); column-gap: var(--space-4); }
+    .gf-desc__label { color: var(--color-text-tertiary); }
+    .gf-desc__value { color: var(--color-text); word-break: break-all; }
+    .gf-desc__value--mono { font-variant-numeric: tabular-nums; }
+
+    .gf-tag {
+      display: inline-flex;
+      align-items: center;
+      height: 22px;
+      padding: 0 var(--space-2);
+      font-size: var(--font-size-body-sm);
+      color: var(--tag-blue-text);
+      background: var(--tag-blue-bg);
+      border-radius: var(--radius-btn);
+    }
+
+    /* ============================================================
+       表单区（表单抽屉用）
+       ============================================================ */
+    .gf-form-field { margin-bottom: var(--space-4); }
+    .gf-form-field:last-child { margin-bottom: 0; }
+    .gf-form-field__label {
+      display: block;
+      margin-bottom: var(--space-2);
+      font-size: var(--font-size-body);
+      color: var(--color-text-secondary);
+    }
+    .gf-form-field__required { color: var(--color-error); margin-right: var(--space-1); }
+    .gf-form-field__control {
+      width: 100%; height: 32px;
+      padding: 0 var(--space-3);
+      font-family: var(--font-family);
+      font-size: var(--font-size-body);
+      color: var(--color-text);
+      background: var(--color-white);
+      border: 1px solid var(--color-border-strong);
+      border-radius: var(--radius-btn);
+      transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    }
+    .gf-form-field__control:hover { border-color: var(--color-primary); }
+    .gf-form-field__control:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 2px var(--color-primary-focus); }
+    .gf-form-field__control::placeholder { color: var(--color-text-quaternary); }
+  </style>
+</head>
+<body data-page-node-id="cwI4NwrxrMrMuCQryCzLF4">
+
+  <!-- ===== 演示用触发区（业务接入时删除） ===== -->
+  <div class="demo-launch" data-page-node-id="jtJ2ZOW2wgyxgXaajPZoQL">
+    <h1 data-page-node-id="ToucxHRtTz0DLNe3um8Kto">抽屉模板 · 自定义固定工作栏</h1>
+    <div class="demo-launch__row" data-page-node-id="ZCjfDCEjoCYvHmr1Feck4h">
+      <button class="gf-btn gf-btn--secondary" data-drawer-open="drawerDetail" data-page-node-id="s34d2pQxHnsoI4CX9a8o65">详情抽屉 480</button>
+      <button class="gf-btn" data-drawer-open="drawerForm" data-page-node-id="xCXEGVsHV7eDdt4U5axo3w">表单抽屉 560</button>
+    </div>
+  </div>
+
+  <!-- ===== 详情抽屉 480px：只读预览，操作按钮在 header 右侧 ===== -->
+  <div class="gf-drawer-mask" id="drawerDetail" data-page-node-id="jjpxkgMYN89wixoQaTgMBG">
+    <div class="gf-drawer gf-drawer--detail" role="dialog" aria-modal="true" aria-labelledby="titleDetail" data-page-node-id="acZeozz2SdGgesx5EGqIja">
+      <div class="gf-drawer__header" data-page-node-id="YFf1iVm6FULOEuXunbEJJ1">
+        <div class="gf-drawer__header-side" data-page-node-id="KaosoEgzoHQyFJ1hMslnyP">
+          <button class="gf-drawer__close" data-drawer-close aria-label="关闭" data-page-node-id="adGsjFXqRRWptLcgIjM7xD">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" overflow="visible" data-page-node-id="xD2B8KtpKwnB9l1QP4bqUs">
+              <path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" data-page-node-id="5VxOoSYwFsyQ2aktFRLxPM"/>
+            </svg>
+          </button>
+          <!-- 业务替换点：标题文案 -->
+          <h2 class="gf-drawer__title" id="titleDetail" data-page-node-id="mBDDAL1NnxCrCG0Fy1uSwD">产品备案详情</h2>
+        </div>
+        <!-- 业务替换点：右侧操作（展示类可只保留「关闭」或不放按钮） -->
+        <div class="gf-drawer__header-side" data-page-node-id="cykwPidDANkhqYOXpF9hkO">
+          <button class="gf-btn gf-btn--secondary" data-drawer-close data-page-node-id="WGtD0u6EprGwuzAzgLG6eh">关闭</button>
+        </div>
+      </div>
+      <!-- 业务替换点：只读字段 -->
+      <div class="gf-drawer__body" data-page-node-id="wGqAQiE1CSuARwZxSLrAaV">
+        <div class="gf-desc" data-page-node-id="l7dfqSUFHgbIbLjQzDjqCY">
+          <span class="gf-desc__label" data-page-node-id="qgJ2pSE3xcyzTufPeZdDEG">产品名称</span>
+          <span class="gf-desc__value" data-page-node-id="JJCF2WSolRGkP0O4dnHwAX">广发稳健增长混合型证券投资基金 A</span>
+          <span class="gf-desc__label" data-page-node-id="ADByL5P7Dot1YtJguLA5GJ">产品代码</span>
+          <span class="gf-desc__value gf-desc__value--mono" data-page-node-id="eIZJnC27Du0LwYs7SkCJU2">270002</span>
+          <span class="gf-desc__label" data-page-node-id="g8WlTAR6op7WUh1nt0xz19">备案状态</span>
+          <span class="gf-desc__value" data-page-node-id="wVYKFQnaNn58EmvcEJdjeJ"><span class="gf-tag" data-page-node-id="QgvrCUu6by1jJiBxEeFoVr">备案通过</span></span>
+          <span class="gf-desc__label" data-page-node-id="DXOYx0r0NldWWEBurkEwgY">产品类型</span>
+          <span class="gf-desc__value" data-page-node-id="CkPldVbdWbX4YiPDY436RS">混合型</span>
+          <span class="gf-desc__label" data-page-node-id="1Hd9VVmlYuHIhFwFGEMZ3R">托管行</span>
+          <span class="gf-desc__value" data-page-node-id="3KtICFeOEQBh45uMV2Wwb6">中国工商银行股份有限公司</span>
+          <span class="gf-desc__label" data-page-node-id="n4yvtGfFK7Y2V5rtCRzAU6">投资经理</span>
+          <span class="gf-desc__value" data-page-node-id="TfRnon1N5UC70EYboNk2Al">傅友兴</span>
+          <span class="gf-desc__label" data-page-node-id="kJXGKo1ulpaFLZb1M9MwCk">备案日期</span>
+          <span class="gf-desc__value gf-desc__value--mono" data-page-node-id="UqGGz87Wk46DR3XlHO739N">2026-08-14</span>
+          <span class="gf-desc__label" data-page-node-id="P1VPiqLzthHa6lDmAGd1xN">风险等级</span>
+          <span class="gf-desc__value" data-page-node-id="fZXBDjpaLO6qNYo76PgFww">R3（中风险）</span>
+          <span class="gf-desc__label" data-page-node-id="DhLTzBacryNbPo4JUfBVs1">备注</span>
+          <span class="gf-desc__value" data-page-node-id="8ocLmTu5WxwuJJR3Gzeynt">本产品为契约型开放式基金，存续期不定期，申购赎回以基金合同及招募说明书为准。</span>
+        </div>
+      </div>
+      <!-- 桌面端默认不生成 footer -->
+    </div>
+  </div>
+
+  <!-- ===== 表单抽屉 560px：单列垂直表单 ===== -->
+  <div class="gf-drawer-mask" id="drawerForm" data-page-node-id="7dYiv1BdEFyEBunAfxPV1V">
+    <div class="gf-drawer gf-drawer--form" role="dialog" aria-modal="true" aria-labelledby="titleForm" data-page-node-id="9Sg6Yq92FMaO0HQSWXYsJ4">
+      <div class="gf-drawer__header" data-page-node-id="IA17z48RKDw04e6SB2FD4I">
+        <div class="gf-drawer__header-side" data-page-node-id="XhYm80u4QUbVRF7PT3U7Fn">
+          <button class="gf-drawer__close" data-drawer-close aria-label="关闭" data-page-node-id="vRc9JBoc74xdxRqmJHnim5">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" overflow="visible" data-page-node-id="xvEh75tTxh611AfbPfUjEl">
+              <path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" data-page-node-id="cg0xqRy9fjvVs8NX5PjPcC"/>
+            </svg>
+          </button>
+          <h2 class="gf-drawer__title" id="titleForm" data-page-node-id="E70ChVuVOWZkB69kFTAZBA">添加数据源</h2>
+        </div>
+        <!-- 业务替换点：右侧操作按钮与回调 -->
+        <div class="gf-drawer__header-side" data-page-node-id="udNqJEM7eCvHQFgE4ufVDO">
+          <button class="gf-btn gf-btn--secondary" data-drawer-close data-page-node-id="JAEcediaGArXMV4mGXeevn">取消</button>
+          <button class="gf-btn" data-drawer-confirm data-page-node-id="rqabVrYhfVmKI6GYTvhnGi">确定</button>
+        </div>
+      </div>
+      <!-- 业务替换点：表单字段 -->
+      <div class="gf-drawer__body" data-page-node-id="IbRpGIkiItlAlkHCimgODR">
+        <form id="formSource" data-page-node-id="409Lcgu0oMA0M5rm5lBzCM">
+          <div class="gf-form-field" data-page-node-id="5hbIFa8UonhcMTXsaPGyXU">
+            <label class="gf-form-field__label" for="dSourceName" data-page-node-id="jGiLfIjGZ1NK8WLUlcS6uP"><span class="gf-form-field__required" data-page-node-id="1Cwj72G1EWY7sdpaQsIXs7">*</span>数据源名称</label>
+            <input class="gf-form-field__control" id="dSourceName" type="text" placeholder="请输入数据源名称" data-page-node-id="3KAE5jFhFp0D0GHApMWhYO">
+          </div>
+          <div class="gf-form-field" data-page-node-id="aoYq861LvASzBT3EObNrqw">
+            <label class="gf-form-field__label" for="dSourceType" data-page-node-id="E11mwWHxPeDMssuRkEODRd"><span class="gf-form-field__required" data-page-node-id="p5j8QIuzEX4fCTjtlSzZHb">*</span>数据源类型</label>
+            <input class="gf-form-field__control" id="dSourceType" type="text" placeholder="如 MySQL / Oracle / API" data-page-node-id="hj0qK0TfmVulScXIBe9ZxR">
+          </div>
+          <div class="gf-form-field" data-page-node-id="mnePNWopEKd9ciLNdOnMoV">
+            <label class="gf-form-field__label" for="dConnStr" data-page-node-id="593rmjhgyNw43QU82ScBNS"><span class="gf-form-field__required" data-page-node-id="ot7BMd25ZoMu9P8XdgeHWF">*</span>连接地址</label>
+            <input class="gf-form-field__control" id="dConnStr" type="text" placeholder="请输入连接地址" data-page-node-id="UopPn5C8L5LAR4mh4rKg8X">
+          </div>
+          <div class="gf-form-field" data-page-node-id="UfvsfxZuuURtu8MaXhQSDv">
+            <label class="gf-form-field__label" for="dRemark" data-page-node-id="X6ohF6ckd9pEDgKS1LpVS0">备注</label>
+            <input class="gf-form-field__control" id="dRemark" type="text" placeholder="选填" data-page-node-id="DQ3l8XjnBxtFlz4vHQDJwk">
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ============================================================
+       抽屉开关（业务接入时替换为框架态管理，如 React open 受控）
+       ============================================================ */
+    function openDrawer(id) {
+      var mask = document.getElementById(id);
+      if (mask) mask.classList.add('is-open');
+    }
+
+    function closeDrawer(id) {
+      var mask = id ? document.getElementById(id) : null;
+      if (mask) mask.classList.remove('is-open');
+      else document.querySelectorAll('.gf-drawer-mask.is-open').forEach(function (m) {
+        m.classList.remove('is-open');
+      });
+    }
+
+    document.querySelectorAll('[data-drawer-open]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        openDrawer(btn.getAttribute('data-drawer-open'));
+      });
+    });
+
+    document.querySelectorAll('[data-drawer-close]').forEach(function (btn) {
+      btn.addEventListener('click', function () { closeDrawer(); });
+    });
+
+    /* 确认按钮：业务替换点 —— 换成真实提交逻辑 */
+    document.querySelectorAll('[data-drawer-confirm]').forEach(function (btn) {
+      btn.addEventListener('click', function () { closeDrawer(); });
+    });
+
+    /* 点击遮罩空白处关闭 */
+    document.querySelectorAll('.gf-drawer-mask').forEach(function (mask) {
+      mask.addEventListener('click', function (e) {
+        if (e.target === mask) mask.classList.remove('is-open');
+      });
+    });
+
+    /* Esc 关闭 */
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeDrawer();
+    });
+  </script>
+</body>
+</html>
