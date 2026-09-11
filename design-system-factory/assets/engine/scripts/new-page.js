@@ -15,7 +15,9 @@
  *   --name     标题，用于 <title> 与 PageHeader / 首个浮层标题
  *
  * 选项：
- *   --layout   mixed（默认，通栏顶栏 + 浅色侧边栏）| none（只要内容区）
+ *   --layout   mixed（默认，通栏顶栏 + 浅色侧边栏）
+ *              side （浅色侧边栏；模板未沉淀时打印创建引导，不报错了事）
+ *              none （只要内容区）
  *   --tabs     附带多标签导航（mixed 布局已内置卡片式多标签，本参数忽略）
  *   --overlay  在页面里附带浮层骨架，逗号分隔，每档可带尺寸：
  *                modal           弹窗 confirm(480) 档
@@ -80,7 +82,9 @@ const CONTENT_TPL = {
   drawer: 'drawer/basic-drawer.html'
 };
 const LAYOUT_TPL = {
-  mixed: 'layout/mixed-layout.html'
+  mixed: 'layout/mixed-layout.html',
+  /* side 本包尚未沉淀：指定时不会干报错，而是打印创建引导（见 guideCreateTemplate） */
+  side: 'layout/side-layout.html'
 };
 
 /* 浮层：模板路径 + 遮罩 class + 需要一并带走的样式选择器 */
@@ -147,10 +151,35 @@ if (!NAME) {
   process.exit(1);
 }
 if (LAYOUT !== 'none' && !LAYOUT_TPL[LAYOUT]) {
-  console.error('✗ 错误的 --layout。可选：mixed / none');
+  console.error('✗ 错误的 --layout=' + LAYOUT + '。可选：' + Object.keys(LAYOUT_TPL).join(' / ') + ' / none');
   process.exit(1);
 }
 const IS_OVERLAY_TYPE = TYPE === 'modal' || TYPE === 'drawer';
+
+/**
+ * 模板缺失时的「创建引导」。
+ * 中后台普遍该有自己的布局/内容模板，但本包未必都沉淀了——
+ * 这时不能只报一句「缺失」，要给出一条能走完的路（派生自谁、结构锚点、落位、自检）。
+ */
+function guideCreateTemplate(missing) {
+  console.error('\n—— 以下模板本包尚未沉淀。多数系统都需要它们，按下面补即可 ——');
+  missing.forEach((f) => {
+    const isLayout = f.startsWith('layout/');
+    console.error('\n▸ ' + f);
+    console.error('  派生自　：' + (isLayout
+      ? 'scripts/layout/mixed-layout.html（同一套骨架，按需去掉通栏顶栏）'
+      : '同目录下最接近的模板，照它的结构写'));
+    console.error('  结构锚点：' + (isLayout
+      ? '保留 <main class="gf-content">；有面包屑时它必须是 .gf-content 的首子元素'
+      : '只写内容区，样式随模板走，不引入新的布局容器'));
+    console.error('  类名前缀：沿用 gf-，不要另起一套');
+    console.error('  落位　　：design-specs/scripts/' + f);
+  });
+  console.error('\n自检：node design-specs/scripts/check-tokens.js design-specs --strict');
+  console.error('      （[E4] 会校验上面那些结构锚点，退出码必须 0）');
+  console.error('\n不确定长什么样：先用 --layout=mixed 生成一版，手工改成需要的样子，');
+  console.error('再放回上面的路径——new-page.js 下次会自动认。\n');
+}
 
 /* 模板存在性预检：缺模板要在参数阶段报错，不能等到生成到一半抛栈 */
 const NEED_TPL = [CONTENT_TPL[TYPE]];
@@ -160,8 +189,9 @@ if (!IS_OVERLAY_TYPE && TYPE !== 'login' && LAYOUT !== 'none') {
 if (!IS_OVERLAY_TYPE) OVERLAYS.forEach((o) => NEED_TPL.push(OVERLAY_TPL[o.kind].file));
 const MISSING = [...new Set(NEED_TPL)].filter((f) => !fs.existsSync(path.join(SCRIPTS_DIR, f)));
 if (MISSING.length) {
-  console.error('✗ 以下模板缺失，无法生成（请补齐模板或改用其它参数）：');
+  console.error('✗ 以下模板缺失，无法生成：');
   MISSING.forEach((f) => console.error('    design-specs/scripts/' + f));
+  guideCreateTemplate(MISSING);
   process.exit(1);
 }
 

@@ -22,10 +22,53 @@
 
 ### 路线 A：Figma MCP（最省事，需前置安装）
 
-检查是否已接入：看工具列表里有没有 Figma 相关能力。没有就配置：
+**先判断当前跑在哪个 Agent 里，再按对应方式接。有官方路线的必须用官方的。**
+
+Figma 官方 Remote MCP 地址统一为 `https://mcp.figma.com/mcp`，
+走 OAuth 授权，不需要装 Figma 桌面端。
+
+| Agent | 官方接入方式 | 命令 / 配置 |
+| :-- | :-- | :-- |
+| **Claude Code** | 官方插件（首选） | `claude plugin install figma@claude-plugins-official` |
+| | 或手动添加 | `claude mcp add --transport http figma https://mcp.figma.com/mcp`<br>加 `--scope user` 可全局可用（默认只对当前项目） |
+| **Cursor** | 官方插件（首选） | 在 Agent 对话里输入 `/add-plugin figma` |
+| | 或 MCP deeplink | `cursor://anysphere.cursor-deeplink/mcp/install?name=Figma&config=eyJ1cmwiOiJodHRwczovL21jcC5maWdtYS5jb20vbWNwIn0%3D` |
+| **Codex** | 官方插件（首选） | Codex app → 左上角 Plugins → Figma 旁「+」→ Install |
+| | 或 CLI | `codex mcp add figma --url https://mcp.figma.com/mcp` |
+| **VS Code** | 官方 | `⌘⇧P` → `MCP: Open User Configuration` → 写 `mcp.json` |
+| **Xcode 27+** | 官方插件 | Settings → Intelligence → Plug-ins → Add from URL：`https://github.com/figma/mcp-server-guide` |
+| **WorkBuddy** | 配置文件 | `~/.workbuddy-ai/mcp.json`（**注意没有点前缀**） |
+
+需要写文件的两种：
 
 ```json
-// ~/.workbuddy-ai/mcp.json  —— 注意没有点前缀
+// VS Code —— MCP: Open User Configuration
+{
+  "servers": {
+    "figma": { "url": "https://mcp.figma.com/mcp", "type": "http" }
+  }
+}
+```
+
+```json
+// WorkBuddy —— ~/.workbuddy-ai/mcp.json
+{
+  "mcpServers": {
+    "figma": { "url": "https://mcp.figma.com/mcp", "type": "http" }
+  }
+}
+```
+
+**授权动作**：配置完不会自动可用。在客户端里对 Figma 这一项点
+**Authenticate / Connect / Start** → 浏览器里 **Allow access** → 回到客户端看到已连接才算通。
+WorkBuddy 是：连接器管理页 → 自定义连接器 → 对新服务点「Trust」。
+
+**没有官方插件的 Agent**（只要支持 MCP 就能用）：
+
+1. 先试远程 HTTP —— 上面那个 URL 配 `type: http`，多数客户端认这个
+2. 该 Agent 只支持 stdio 的话，退回社区实现（需 Figma API Key）：
+
+```json
 {
   "mcpServers": {
     "figma": {
@@ -36,9 +79,12 @@
 }
 ```
 
-写完后**不会自动生效**，要提醒用户：连接器管理页 → 自定义连接器 → 对新服务点「Trust」。
+**判断顺序**：有官方路线 → 用官方；没有官方但支持 MCP → 用上面的通用写法；
+完全不支持 MCP → 直接走路线 B（导出文件），别在接入上耗时间——
+这条路线的产出和导出文件是一样的，只是省了「让设计师导一次」的沟通成本。
 
-Figma Dev Mode MCP 也可以走远程 HTTP（OAuth），按 Figma 官方文档配置，别自己编字段名。
+> **别自己编字段名。** 远程地址、deeplink、CLI 参数都从 Figma 官方文档取。
+> 这个领域半年一变，任何写死的版本都会过期；配置前先核一眼官方文档。
 
 ### 路线 B：导出文件（最稳，推荐默认）
 

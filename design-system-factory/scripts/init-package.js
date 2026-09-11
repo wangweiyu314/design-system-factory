@@ -165,7 +165,12 @@ console.log('  1. 采集：让能打开线上页面的人跑 scripts/collect-fro
 console.log('  2. 挖掘：' + NODE + ' ' + path.join(FACTORY, 'scripts', 'mine-tokens.js') + ' \\');
 console.log('             --online=<采集JSON> --figma=<设计稿导出> --emit-tokens=tokens.draft.md');
 console.log('  3. 定稿：把候选值确认后填进 ' + PKG + '/foundation/tokens.md，再回灌各模板 :root');
-console.log('  4. 补文档：按实际页面类型生成 components/ pages/ 文档与 examples/ 标杆页');
-console.log('  5. 校验：' + NODE + ' ' + PKG + '/scripts/check-tokens.js ' + path.dirname(OUT) + ' --strict');
+console.log('  4. 补模板：引擎只带通用骨架（布局仅 mixed 一套）。你这套系统大概率还有');
+console.log('     自己特有的布局 / 页面类型——多数中后台至少还需要一套侧边导航布局。');
+console.log('     缺哪个让生成器报给你，它不干报错，会打印完整创建引导：');
+console.log('       ' + NODE + ' ' + PKG + '/scripts/new-page.js --type=list --name=测试 --layout=side');
+console.log('     （引导含：派生自谁 / 结构锚点 / 类名前缀 / 落位 / 自检命令）');
+console.log('  5. 补文档：按实际页面类型生成 components/ pages/ 文档与 examples/ 标杆页');
+console.log('  6. 校验：' + NODE + ' ' + PKG + '/scripts/check-tokens.js ' + path.dirname(OUT) + ' --strict');
 console.log('     退出码必须是 0 才能交付');
 process.exit(0);
