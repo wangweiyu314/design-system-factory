@@ -183,11 +183,16 @@
   <!-- 1 -->
   <section data-page-node-id="jaDcSZAjsaCoRH3KYFTXu7">
     <h2 data-page-node-id="WgvdEut6Bss7r9z3jBtkuG"><span class="num" data-page-node-id="HUMItbuz0e0999pDljsFKX">01</span>它是干什么的</h2>
-    <p class="sub" data-page-node-id="Qgvs2ln6HGS4cgrJjzLnyO">一句话：把「建一套设计系统」这件事，从手工作坊变成有流程、有校验、可复现的工程。</p>
+    <p class="sub" data-page-node-id="Qgvs2ln6HGS4cgrJjzLnyO">一句话：把「建一套设计系统」这件事，变成有流程、有校验、可复现的工程——产出的是<strong data-page-node-id="Qgvs2ln6HGS4cgrJjzLnyO2">机器可执行的约束</strong>，不是给人看的文档。</p>
 
     <p data-page-node-id="TrD0Moc5HHW5XnFrdoVBDK">
-      过去建一套设计系统技能包，要人工翻设计稿抄数值、对着线上页面核实现、手写二十份规范文档、
-      再做模板和校验脚本。整个过程没人知道抄错了没有——因为设计稿和规范里两个数「看起来都合理」。
+      设计规范的真正用途，是约束那个写代码的角色。现在这个角色越来越多是 AI——
+      但它读不进几十页文档，也记不住口头约定，于是颜色自己编、间距自己凑。
+    </p>
+    <p data-page-node-id="TrD0Moc5HHW5XnFrdoVBDK2">
+      更麻烦的是这类错误<strong data-page-node-id="TrD0Moc5HHW5XnFrdoVBDK3">不报错</strong>：
+      CSS 能跑、页面能看，硬编码色值和数值漂移混在几百行 diff 里，
+      只能靠 review 时一句句挑——而这是 AI 生成代码之后最现实的质量瓶颈。
     </p>
     <p data-page-node-id="3aK0sw4rD37utuiZXo0Nlm">
       这个工厂把流程固化成五阶段，把最容易出错的三件事交给脚本：
@@ -209,16 +214,16 @@
 
     <div class="grid g3" data-page-node-id="H6vk8WyEzV1AGkGbx364UQ">
       <div class="card" data-page-node-id="zuycRlb0eGp60VVtDuCRkU">
-        <div class="t" data-page-node-id="Ra7upG3pQ447oYYEvpGh7T">线上页面抓不到</div>
-        <div class="d" data-page-node-id="5R7myFx4NhYap6tdekS5Dx">中后台基本都在内网、需要登录，自动化工具打不开，只能靠人肉截图描述。</div>
+        <div class="t" data-page-node-id="Ra7upG3pQ447oYYEvpGh7T">规范读不进，也读不全</div>
+        <div class="d" data-page-node-id="5R7myFx4NhYap6tdekS5Dx">几十页规范塞不进上下文，Agent 只看得到片段，剩下的颜色间距全靠它自己猜。</div>
       </div>
       <div class="card" data-page-node-id="33GSBnTbmQw6E0Pe7fkT2c">
-        <div class="t" data-page-node-id="TJ3Y9PgKM7aZNGAF5KTtSS">取值抄错没人知道</div>
-        <div class="d" data-page-node-id="wYsTyLYt4vfOYPcVAdhEwV">设计稿到规范是人工转录。抄错不会报错，只会悄悄变成规范的一部分，几个月后才暴露。</div>
+        <div class="t" data-page-node-id="TJ3Y9PgKM7aZNGAF5KTtSS">写错了没人发现</div>
+        <div class="d" data-page-node-id="wYsTyLYt4vfOYPcVAdhEwV">硬编码色值、数值漂移混在几百行 diff 里。CSS 不报错、页面能跑，人眼也抓不住。</div>
       </div>
       <div class="card" data-page-node-id="awWEcBbwdGENS673mK8Jmp">
-        <div class="t" data-page-node-id="fVktHgb9AyLmvARkSAlM2f">规范写完落不了地</div>
-        <div class="d" data-page-node-id="tfiUTtFjKm2dE6QVySsmPr">文档是一套、代码是另一套。没人记得跑校验，规范很快就和实现对不上。</div>
+        <div class="t" data-page-node-id="fVktHgb9AyLmvARkSAlM2f">没有门禁，全靠自觉</div>
+        <div class="d" data-page-node-id="tfiUTtFjKm2dE6QVySsmPr">prompt 里写了「必须遵守规范」，Agent 转头就忘，没有任何机制真的拦得住它。</div>
       </div>
     </div>
 
@@ -226,11 +231,11 @@
     <div class="vs" data-page-node-id="GSQw21VRGj9IZ9dwf8B7pl">
       <div class="card soft bad" data-page-node-id="7qtemXymPzvbdmDsyXjqNd">
         <div class="t" data-page-node-id="eccL1L28Y2WzZ1UzqObLbP">× 过去</div>
-        <div class="d" data-page-node-id="JQtifwWu8oVNOkIN9wDOhW">人肉看截图描述颜色 → 凭感觉给主色命名 → 规范写完就结束，没有校验环节。</div>
+        <div class="d" data-page-node-id="JQtifwWu8oVNOkIN9wDOhW">规范停在文档里，Agent 读不全 → 生成的页面颜色自编、间距自凑 → 没有校验环节，只能靠 review 时人眼抓。</div>
       </div>
       <div class="card soft good" data-page-node-id="Qv4URPyboGBpBfQIoLzHm9">
         <div class="t" data-page-node-id="A3tlzV8npvxzQZAFxdHYNf">✓ 现在</div>
-        <div class="d" data-page-node-id="DPE1RihFBaxbb0OArPCQTK">浏览器采集真实 computed style → 频次聚合出候选、语义由人确认 → 校验器双向比对 + 提交门禁强制生效。</div>
+        <div class="d" data-page-node-id="DPE1RihFBaxbb0OArPCQTK">数值落成机器可读的 Token 单一真值源 → 校验器双向比对 → 提交门禁让约束自动生效，不合规直接卡在 commit。</div>
       </div>
     </div>
   </section>
@@ -417,7 +422,7 @@ $NODE am-design-specs/scripts/check-tokens.js . --strict</pre>
 ├── examples/              标杆页
 └── scripts/
     ├── check-tokens.js        Token 双向校验
-    ├── check-design-sync.js   设计稿 ↔ 规范核对（抓转录误差）
+    ├── check-design-sync.js   设计稿 ↔ 规范核对（抓两个真值源的偏差）
     ├── new-page.js            一键页面生成器
     ├── install-hooks.js       提交门禁（不合规不让提交）
     └── &lt;分类&gt;/*.html          11 套已验证模板</div>
