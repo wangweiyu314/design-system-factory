@@ -2,10 +2,10 @@
 /**
  * 设计稿 ↔ 规范 双向核对器  v1.0
  * ------------------------------------------------------------
- * 解决「设计稿 → 规范文档」这段人工转录链路的误差问题：
+ * 解决「设计稿」与「规范文档」两个真值源之间的漂移问题：
  * 把设计稿导出的变量与 foundation/tokens.md 做双向比对，输出三类差异
  *
- *   D3 同名不同值 —— 转录误差（核心目标）：两边取值为同一意图却不一致
+ *   D3 同名不同值 —— 真值源冲突（核心目标）：两边取值为同一意图却不一致
  *   D1 设计稿有、规范无 —— 规范未收编
  *   D2 规范有、设计稿无 —— 设计稿未同步 或 规范虚胖
  *
@@ -88,7 +88,7 @@ const LOOKS_LIKE_VALUE = (v) =>
   typeof v === 'number' || /^(#|rgba?\(|hsla?\()/i.test(String(v)) || /^-?[\d.]+\s*(px|rem|em|%|ms|s|vh|vw|deg)?$/i.test(String(v).trim());
 
 /* hex + opacity → rgba()。Figma 常把填充色与不透明度分开导出，
- * 手抄时最容易丢掉 alpha，直接合成后再比对 */
+ * 同步到规范时最容易丢掉 alpha，直接合成后再比对 */
 function hexToRgba(hex, opacity) {
   const m = /^#?([0-9a-f]{3,8})$/i.exec(String(hex).trim());
   if (!m) return null;
@@ -252,7 +252,7 @@ if (AS_JSON) {
   L('设计稿导出　　：' + INPUT);
   L('规范 Token　　：' + spec.size + '（来源 ' + path.relative(process.cwd(), SPEC_TOKENS) + '）');
   L('设计稿变量　　：' + design.size);
-  L('\n结果：' + (ok ? '一致，无转录误差。' : '存在差异，见下方明细。') + '\n');
+  L('\n结果：' + (ok ? '一致，无偏差。' : '存在差异，见下方明细。') + '\n');
 
   /* 局部导出时 [D2] 天然会长（规范 171 个 Token 不可能一次导全），
    * 逐条打印会淹没真正要看的 [D3]，故截断 */
@@ -263,7 +263,7 @@ if (AS_JSON) {
   };
 
   L('----');
-  L('同名不同值 [D3]　：' + d3.length + '（转录误差，须人工裁决哪边是意图源）');
+  L('同名不同值 [D3]　：' + d3.length + '（真值源冲突，须人工裁决哪边是意图源）');
   if (!QUIET) d3.forEach((x) => L('       ' + x.token + '　规范 ' + x.spec + '　≠　设计稿 ' + x.design));
   L('设计稿有规范无 [D1]　：' + d1.length + (STRICT ? '（strict 模式计为失败）' : '（提示项）'));
   if (!QUIET) list(d1, (t) => t + ' = ' + design.get(t));

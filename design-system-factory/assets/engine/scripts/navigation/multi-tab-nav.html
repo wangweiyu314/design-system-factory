@@ -6,15 +6,18 @@
   <title>多标签导航模板 - 广发中后台设计系统</title>
   <!--
     ============================================================
-    模板：多标签导航（MultiTab）
+    模板：多标签导航（MultiTab，v2.10 卡片式）
     规范：components/navigation.md §6「横向溢出与切换箭头（强制）」
-    版本：design-specs v2.4
+    版本：design-specs v2.10.3
+
+    v2.10.3 同步：
+      · 选中态由"border-bottom 指示线"改为"白色卡片"（与 MixedLayout 多标签栏一致）
+      · 页签宽度由内容决定（去 min-width，保留 max-width 防呆），padding: 0 var(--space-4)
+      · 栏体加 position: relative; z-index: 1，让 box-shadow 不被后续元素覆盖
 
     强约束 #19（务必保留）：
       · 标签溢出时用左右箭头切换，禁止出现可见滚动条挤压 40px 栏高
       · 视口 overflow-x: auto + scrollbar-width: none，由箭头编程滚动 scrollLeft
-      · 选中态指示线用 border-bottom（margin-bottom: -1px 贴合分割线），
-        不用 ::after —— ::after 会被视口 overflow 裁剪
 
     关闭策略（已内置）：
       1. data-closable="false" 的标签（如首页）不可关闭
@@ -34,15 +37,17 @@
       --color-text-secondary: #67696E;
       --color-text-tertiary: #939599;
       --color-text-heading: #13161B;
+      --color-white: #FFFFFF;
       --tab-height: 40px;
+      --tab-card-max-width: 320px;
+      --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.06);
       --shadow-dropdown: 0 6px 16px rgba(0, 0, 0, 0.12);
       --radius-btn: 2px;
       --radius-card: 4px;
-      --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-6: 24px;
+      --space-1: 4px; --space-2: 8px; --space-3: 12px; --space-4: 16px; --space-5: 20px; --space-6: 24px;
+      --transition-fast: 0.2s;
       --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', -apple-system, 'Helvetica Neue', Arial, sans-serif;
       --z-index-nav-popup: 1100;
-          --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.06);
-      --color-white: #FFFFFF;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -55,24 +60,31 @@
     }
     button { font-family: var(--font-family); }
 
-    /* ============ 多标签栏 ============ */
+    /* ============ 多标签栏（v2.10 卡片式） ============
+       栏体背景 = 画布灰（--color-bg-canvas），选中页签 = 白色卡片（--color-bg-card）。
+       不用 border-bottom / border-radius（v2.10 强约束：栏体不绘制边框/圆角，避免与下方
+       卡片内容视觉断裂）。z-index: 1 让 box-shadow 绘制在紧随其后的元素之上。 */
     .gf-tabsbar {
-      height: var(--tab-height); background: var(--color-bg-card);
-      border-bottom: 1px solid var(--color-border);
-      border-radius: var(--radius-card) var(--radius-card) 0 0;
+      position: relative; z-index: 1;
+      height: var(--tab-height); background: var(--color-bg-canvas);
       display: flex; align-items: stretch;
       box-shadow: var(--shadow-subtle);
     }
-    /* 左右切换箭头：未溢出时 visibility: hidden 占位，避免布局跳动 */
+    /* 左右切换箭头：绝对定位悬浮，不占布局宽度（首签紧贴左边缘），溢出时才显示 */
     .gf-tabsbar__arrow {
-      width: 32px; flex-shrink: 0; border: none; background: var(--color-bg-card);
-      color: var(--color-text-secondary); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      transition: background 0.2s, color 0.2s;
-      visibility: hidden;
+      /* 绝对定位悬浮在页签之上：不占布局宽度，首个页签因此紧贴栏体左边缘
+         （此前左右各占 32px 占位，首签左侧空出 32px）；溢出时才显示，
+         并用栏体底色遮住被覆盖的页签，也不会在溢出切换时抖动。 */
+      position: absolute; top: 0; z-index: 2;
+      width: 32px; height: var(--tab-height); border: none;
+      background: var(--color-bg-canvas); color: var(--color-text-secondary); cursor: pointer;
+      display: none; align-items: center; justify-content: center;
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
-    .gf-tabsbar__arrow--visible { visibility: visible; }
-    .gf-tabsbar__arrow:hover { background: var(--color-bg-canvas); color: var(--color-text); }
+    .gf-tabsbar__arrow:first-child { left: 0; }
+    .gf-tabsbar__arrow:last-child { right: 0; }
+    .gf-tabsbar__arrow--visible { display: flex; }
+    .gf-tabsbar__arrow:hover { background: var(--color-bg-card); color: var(--color-text); }
 
     /* 视口承载横向滚动，滚动条隐藏（由箭头控制滚动） */
     .gf-tabsbar__viewport {
@@ -83,23 +95,32 @@
     .gf-tabsbar__viewport::-webkit-scrollbar { display: none; }
     .gf-tabsbar__track { display: inline-flex; align-items: stretch; height: var(--tab-height); padding: 0 var(--space-2); }
 
+    /* 页签（v2.10.3）：固定左右内边距、宽度由内容决定；保留 max-width 防呆
+     * （去掉了 min-width: 112px — v2.10.3 反馈"字数少时宽度也要变小"） */
     .gf-tabsbar__tab {
-      display: flex; align-items: center; gap: var(--space-2); padding: 0 var(--space-4);
+      position: relative; flex: 0 0 auto;
+      max-width: var(--tab-card-max-width);
       height: var(--tab-height); box-sizing: border-box;
-      font-size: 13px; color: var(--color-text-secondary); cursor: pointer; position: relative;
-      white-space: nowrap; user-select: none;
+      display: block; line-height: var(--tab-height); text-align: center;
+      padding: 0 var(--space-4);
+      font-size: 14px; color: var(--color-text); cursor: pointer;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none;
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
-    .gf-tabsbar__tab:hover { color: var(--color-text); }
-    /* 选中态：border-bottom 属于元素自身边框，不受祖先 overflow 裁剪 */
-    .gf-tabsbar__tab--active {
-      color: var(--color-primary); font-weight: 500;
-      border-bottom: 2px solid var(--color-primary);
-      padding-bottom: 0; margin-bottom: -1px;
-    }
+    /* 页签间分隔线由右侧页签的左边框承担，末位页签补右边框 */
+    .gf-tabsbar__tab + .gf-tabsbar__tab { border-left: 1px solid var(--color-border); }
+    .gf-tabsbar__tab:last-child { border-right: 1px solid var(--color-border); }
+    /* 可关闭页签：右侧多留 32px 给关闭按钮（X 16px + 距右 8px + 文字↔X 8px 间隙） */
+    .gf-tabsbar__tab[data-closable="true"] { padding-right: calc(var(--space-6) + var(--space-2)); }
+    .gf-tabsbar__tab:hover { color: var(--color-primary); }
+    /* 选中态：白色卡片覆盖在栏体灰底之上（不用 border-bottom，避免与下方面包屑/内容冲突） */
+    .gf-tabsbar__tab--active { background: var(--color-bg-card); color: var(--color-primary); font-weight: 500; }
     .gf-tabsbar__close {
+      position: absolute; right: var(--space-2); top: 50%; transform: translateY(-50%);
       width: 16px; height: 16px; display: flex; align-items: center; justify-content: center;
       border: none; background: transparent; border-radius: var(--radius-btn);
-      color: var(--color-text-tertiary); cursor: pointer; padding: 0;
+      color: var(--color-text-secondary); cursor: pointer; padding: 0;
+      transition: background var(--transition-fast), color var(--transition-fast);
     }
     .gf-tabsbar__close:hover { background: var(--color-fill-secondary); color: var(--color-text); }
 
@@ -208,6 +229,7 @@
     </div>
 
     <p class="gf-demo__hint">
+      v2.10.3 更新：选中态由"下划线"改为"白色卡片"；页签宽度由内容决定，文字少时变窄。<br>
       交互说明：<br>
       · 点击标签切换激活态；点击 × 关闭（首页不可关闭，至少保留 1 个标签）<br>
       · 标签总宽溢出时自动显示左右箭头，滚动条始终隐藏<br>

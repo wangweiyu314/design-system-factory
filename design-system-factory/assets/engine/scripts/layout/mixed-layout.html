@@ -8,14 +8,15 @@
     ============================================================
     模板：混合布局（MixedLayout）—— 顶部通栏一级导航 + 浅色侧边栏
     规范：components/layout.md §7.5 + navigation.md §1 / §6 / §12
-    版本：design-specs v2.10
+    版本：design-specs v2.10.3
 
     框架分层（自上而下）：
       通栏顶栏 56px（品牌 + 一级菜单 + 用户区）── 横跨整个页面宽度
       ├ 浅色侧边栏 200px（菜单搜索 + 二级菜单）  ├ 主区域
       │                                          ├ 卡片式多标签 40px
-      │                                          ├ 面包屑行 48px
-      │                                          ├ 主内容区 24px
+      │                                          ├ 主内容区（padding: 0 24px 24px）
+      │                                          │   └ 面包屑：内容流首子元素，
+      │                                          │      无独立行 / 无背景（v2.10.3 起）
       │                                          └ 常驻底部操作栏（可选）
 
     使用方式：复制本文件 → 替换「业务占位」注释处的内容 → 保留结构与 Token
@@ -73,9 +74,7 @@
       --sidebar-collapsed-width: 64px;
       --header-height: 56px;
       --tab-height: 40px;
-      --tab-card-min-width: 112px;
       --tab-card-max-width: 320px;
-      --breadcrumb-height: 48px;
       /* ---- 字体 ---- */
       --font-family: 'Microsoft YaHei', 'PingFang SC', 'SF Pro Display', 'DIN Alternate', -apple-system, 'Helvetica Neue', Arial, sans-serif;
       --font-number: 'DIN Alternate', 'DIN', 'SF Pro Display', 'Helvetica Neue', sans-serif;
@@ -106,7 +105,7 @@
       display: flex; align-items: center; flex-shrink: 0; position: relative; z-index: 10;
     }
     .gf-brand { display: flex; align-items: center; margin-left: var(--space-6); flex-shrink: 0; }
-    .gf-brand__logo { width: 30px; height: 28px; display: block; flex-shrink: 0; }
+    .gf-brand__logo { width: 28px; height: 28px; display: block; flex-shrink: 0; }
     .gf-brand__logo-mark { fill: var(--color-primary); }
     .gf-brand__logo-bar { fill: var(--color-white); }
     .gf-brand__wordmark { font-size: 16px; font-weight: 600; color: var(--color-white); white-space: nowrap; margin-left: var(--space-1); }
@@ -177,9 +176,9 @@
     .gf-menu-item--active .gf-menu-item__icon { color: var(--color-primary); }
     .gf-menu-item--hidden, .gf-menu-group--hidden { display: none; }
 
-    /* 收起触发器：贴合侧边栏右边界，允许越界 12px */
+    /* 收起触发器：垂直居中于侧边栏，贴合右边界并允许越界 12px */
     .gf-collapse-trigger {
-      position: absolute; top: var(--space-4); right: -12px;
+      position: absolute; top: 50%; right: -12px; transform: translateY(-50%);
       width: 24px; height: 24px; border-radius: 50%;
       background: var(--color-bg-card); border: 1px solid var(--color-border);
       box-shadow: var(--shadow-subtle); color: var(--color-text-secondary);
@@ -187,7 +186,7 @@
       cursor: pointer; z-index: 20; transition: color var(--transition-fast), background var(--transition-fast);
     }
     .gf-collapse-trigger:hover { background: var(--color-bg-canvas); color: var(--color-text); }
-    .gf-collapse-trigger svg { width: 12px; height: 12px; }
+    .gf-collapse-trigger svg { width: 12px; height: 12px; transition: transform var(--transition-fast); }
 
     /* 侧边栏收起态 */
     .gf-layout--collapsed .gf-sider { width: var(--sidebar-collapsed-width); }
@@ -196,6 +195,8 @@
     .gf-layout--collapsed .gf-menu-item span { display: none; }
     .gf-layout--collapsed .gf-sider__logo { justify-content: center; padding: 0; }
     .gf-layout--collapsed .gf-menu-item { justify-content: center; padding: 0; }
+    /* 收起态：箭头从"指左（收起）"翻转到"指右（展开）" */
+    .gf-layout--collapsed .gf-collapse-trigger svg { transform: rotate(180deg); }
 
     /* ============ 主区域 ============ */
     .gf-main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; background: var(--color-bg-canvas); }
@@ -209,13 +210,18 @@
       background: var(--color-bg-canvas); box-shadow: var(--shadow-subtle);
     }
     .gf-tabsbar__arrow {
-      width: 32px; flex-shrink: 0; border: none; background: var(--color-bg-canvas);
-      color: var(--color-text-secondary); cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      visibility: hidden; /* 占位避免布局跳动，溢出时切为 visible */
+      /* 绝对定位悬浮在页签之上：不占布局宽度，首个页签因此紧贴栏体左边缘
+         （此前左右各占 32px 占位，首签左侧空出 32px）；溢出时才显示，
+         并用栏体底色遮住被覆盖的页签，也不会在溢出切换时抖动。 */
+      position: absolute; top: 0; z-index: 2;
+      width: 32px; height: var(--tab-height); border: none;
+      background: var(--color-bg-canvas); color: var(--color-text-secondary); cursor: pointer;
+      display: none; align-items: center; justify-content: center;
       transition: background var(--transition-fast), color var(--transition-fast);
     }
-    .gf-tabsbar__arrow--visible { visibility: visible; }
+    .gf-tabsbar__arrow:first-child { left: 0; }
+    .gf-tabsbar__arrow:last-child { right: 0; }
+    .gf-tabsbar__arrow--visible { display: flex; }
     .gf-tabsbar__arrow:hover { background: var(--color-bg-card); color: var(--color-text); }
     .gf-tabsbar__viewport {
       flex: 1; min-width: 0; position: relative;
@@ -225,14 +231,11 @@
     .gf-tabsbar__viewport::-webkit-scrollbar { display: none; }
     .gf-tabsbar__track { display: inline-flex; align-items: stretch; height: var(--tab-height); }
     .gf-tabsbar__tab {
-      /* 宽度随文字自适应，min/max 兜底；flex: 0 0 auto 保证不被挤压（溢出交给箭头滚动） */
       position: relative; flex: 0 0 auto;
-      min-width: var(--tab-card-min-width); max-width: var(--tab-card-max-width);
+      max-width: var(--tab-card-max-width);
       height: var(--tab-height); box-sizing: border-box;
-      /* 用 block + line-height 垂直居中，而不是 display: flex：
-       * flex 容器上的 text-overflow: ellipsis 对裸文本子节点无效（会变成硬裁切） */
       display: block; line-height: var(--tab-height); text-align: center;
-      padding: 0 var(--space-5) 0 var(--space-3);
+      padding: 0 var(--space-4);
       font-size: 14px; color: var(--color-text); cursor: pointer;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis; user-select: none;
       transition: background var(--transition-fast), color var(--transition-fast);
@@ -254,25 +257,25 @@
     }
     .gf-tabsbar__close:hover { background: var(--color-fill-secondary); color: var(--color-text); }
 
-    /* ============ 面包屑行（48px，位于多标签栏下方、内容区之上） ============ */
+    /* 面包屑：内容流顶部元素，无独立行、无背景；不再"置顶"成第二条顶栏 */
     .gf-breadcrumb {
-      height: var(--breadcrumb-height); display: flex; align-items: center; flex-shrink: 0;
-      padding-left: var(--space-6); background: var(--color-bg-canvas);
+      display: flex; align-items: center; flex-wrap: wrap;
+      padding: var(--space-3) 0;
     }
     .gf-breadcrumb__icon { width: 16px; height: 16px; margin-right: var(--space-2); flex-shrink: 0; color: var(--color-text-quaternary); }
     .gf-breadcrumb__item {
-      font-size: 12px; line-height: 16px; color: var(--color-text-tertiary); white-space: nowrap;
+      font-size: 12px; line-height: 20px; color: var(--color-text-tertiary); white-space: nowrap;
       transition: color var(--transition-fast);
     }
     .gf-breadcrumb__item:hover { color: var(--color-primary); cursor: pointer; }
-    .gf-breadcrumb__sep { font-size: 12px; line-height: 16px; color: var(--color-text-tertiary); margin: 0 var(--space-2); }
+    .gf-breadcrumb__sep { font-size: 12px; line-height: 20px; color: var(--color-text-tertiary); margin: 0 var(--space-2); }
     .gf-breadcrumb__item--current { font-size: 14px; line-height: 20px; color: var(--color-text); }
     .gf-breadcrumb__item--current:hover { color: var(--color-text); cursor: default; }
 
     /* ============ 主内容区（左右留白由布局层唯一提供） ============ */
-    /* 顶部 16px 而非 24px：面包屑行已独占 48px 并自带上下留白，
-     * 内容区再补 24px 会让「面包屑 → 内容」显得过空 */
-    .gf-content { flex: 1; overflow-y: auto; padding: var(--space-4) var(--space-6) var(--space-6); background: var(--color-bg-canvas); }
+    /* 顶部 padding 归 0：面包屑已并入内容流顶部，自带 padding 顶 12px；
+     * 内容区再补 padding-top 会让"面包屑 → 页面标题"显得过空 */
+    .gf-content { flex: 1; overflow-y: auto; padding: 0 var(--space-6) var(--space-6); background: var(--color-bg-canvas); }
 
     /* ============ 常驻底部操作栏 ============ */
     .gf-footer-bar {
@@ -343,10 +346,12 @@
   <header class="gf-topbar" data-page-node-id="hr2oJpoNeXlNq1HUvLsWpM">
     <div class="gf-brand" data-page-node-id="QTBMBlHTBJPACB0fZ2grpT">
       <!-- 业务替换点：品牌 Logo（内联 SVG，禁止外链图片 / 图标字体） -->
-      <svg class="gf-brand__logo" viewBox="0 0 30 28" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="38ZnQ1f8XLUXG3VpmfwfdS">
-        <path class="gf-brand__logo-mark" d="M15 1L28 8V20L15 27L2 20V8L15 1Z" data-page-node-id="yxCLYqPyoCS8Gd5yUhsUgg"/>
-        <path class="gf-brand__logo-bar" d="M9 18V10H13.5C15.4 10 16.5 10.9 16.5 12.5C16.5 14.1 15.4 15 13.5 15H11V18H9ZM11 13.2H13.2C13.9 13.2 14.3 12.9 14.3 12.5C14.3 12.1 13.9 11.8 13.2 11.8H11V13.2Z" data-page-node-id="mD0SiGkmAr534x9QOiO2qV"/>
-      </svg>
+      <svg class="gf-brand__logo" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect class="gf-brand__logo-mark" width="28" height="28" rx="5"/>
+              <rect class="gf-brand__logo-bar" x="7" y="14" width="3" height="8" rx="1"/>
+              <rect class="gf-brand__logo-bar" x="12.5" y="9" width="3" height="13" rx="1"/>
+              <rect class="gf-brand__logo-bar" x="18" y="6" width="3" height="16" rx="1"/>
+            </svg>
       <span class="gf-brand__wordmark" data-page-node-id="LjRRdyhIQQLwryNtSi2SG3">广发证券</span>
       <span class="gf-brand__divider" data-page-node-id="cTv0P7sjZFa7GuFmdHC1Z8"></span>
       <!-- 业务替换点：系统名称 -->
@@ -459,20 +464,43 @@
         </button>
       </nav>
 
-      <!-- 面包屑（独立成行） -->
-      <nav class="gf-breadcrumb" aria-label="面包屑" data-page-node-id="cpCWnYqKgYoMyyQZMMbSq3">
-        <svg class="gf-breadcrumb__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="PpoBKrfS7FECKnn2I2mXuk">
-          <path d="M8 1.5C5.23858 1.5 3 3.73858 3 6.5C3 10 8 14.5 8 14.5C8 14.5 13 10 13 6.5C13 3.73858 10.7614 1.5 8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" data-page-node-id="WOphZA4zJRGFSsWyXEEshh"/>
-          <circle cx="8" cy="6.4" r="1.9" stroke="currentColor" stroke-width="1.4" data-page-node-id="GIyGjbEaqVH0U8vfM1x3Iz"/>
-        </svg>
-        <!-- 业务替换点：面包屑层级（当前层级加 --current，不参与 hover 高亮） -->
-        <span class="gf-breadcrumb__item" data-page-node-id="AEjSsAaslL0eoHZNyMr6xb">分组一</span>
-        <span class="gf-breadcrumb__sep" data-page-node-id="80AHD2iDYfhQUvGzB0fNB1">/</span>
-        <span class="gf-breadcrumb__item gf-breadcrumb__item--current" data-page-node-id="RMRg6cO0RP8s02vkAS57wc">菜单项一</span>
-      </nav>
-
       <!-- ============ 主内容区 ============ -->
       <main class="gf-content" data-page-node-id="CrLppTcExhUiTozo7lbhGo">
+
+
+
+
+        <!-- 面包屑（v2.10.3 起并入内容流顶部，不再占独立行、无背景） -->
+
+
+        <nav class="gf-breadcrumb" aria-label="面包屑" data-page-node-id="cpCWnYqKgYoMyyQZMMbSq3">
+
+
+        <svg class="gf-breadcrumb__icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" data-page-node-id="PpoBKrfS7FECKnn2I2mXuk">
+
+
+        <path d="M8 1.5C5.23858 1.5 3 3.73858 3 6.5C3 10 8 14.5 8 14.5C8 14.5 13 10 13 6.5C13 3.73858 10.7614 1.5 8 1.5Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" data-page-node-id="WOphZA4zJRGFSsWyXEEshh"/>
+
+
+        <circle cx="8" cy="6.4" r="1.9" stroke="currentColor" stroke-width="1.4" data-page-node-id="GIyGjbEaqVH0U8vfM1x3Iz"/>
+
+
+        </svg>
+
+
+        <!-- 业务替换点：面包屑层级（当前层级加 --current，不参与 hover 高亮） -->
+
+
+        <span class="gf-breadcrumb__item" data-page-node-id="AEjSsAaslL0eoHZNyMr6xb">分组一</span>
+
+
+        <span class="gf-breadcrumb__sep" data-page-node-id="80AHD2iDYfhQUvGzB0fNB1">/</span>
+
+
+        <span class="gf-breadcrumb__item gf-breadcrumb__item--current" data-page-node-id="RMRg6cO0RP8s02vkAS57wc">菜单项一</span>
+
+
+        </nav>
         <!-- 业务替换点：PageHeader（标题唯一来源，禁止 padding-inline） -->
         <div class="gf-page-header" data-page-node-id="02JHeE3kbC5egLzvqdZINK">
           <h1 class="gf-page-header__title" data-page-node-id="XLkhfaBXohmVu4sbN4nWhB">页面标题</h1>

@@ -62,7 +62,7 @@ am-design-specs/
 ├── examples/             标杆页
 └── scripts/
     ├── check-tokens.js        Token 双向校验（防硬编码、防取值漂移、防规范未收编）
-    ├── check-design-sync.js   设计稿 ↔ 规范核对（抓人工转录误差）
+    ├── check-design-sync.js   设计稿 ↔ 规范核对（抓两个真值源的漂移）
     ├── new-page.js            一键页面生成器
     ├── install-hooks.js       提交门禁（不合规不让提交）
     └── <分类>/*.html          11 套已验证模板

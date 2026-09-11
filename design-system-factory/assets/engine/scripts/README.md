@@ -3,12 +3,12 @@
 > 本目录是**代码起步基座**。生成页面时从这里复制对应模板再改业务字段，
 > 而不是从零写样式——这是保证 Token 化率、避免规范漂移的最短路径。
 >
-> 规范版本：design-specs **v2.10**　|　取值唯一来源：`foundation/tokens.md`
+> 规范版本：design-specs **v2.10.3**　|　取值唯一来源：`foundation/tokens.md`
 >
 > 目录说明：技能包 = `design-specs/`。标杆页在 `examples/`，模板在 `scripts/`，
 > 规范正文在 `foundation/` `components/` `pages/`。
 >
-> **v2.10 框架改版**：交付默认 MixedLayout（`layout/mixed-layout.html`）—— 通栏顶栏 56px 深蓝 #0C1D43 + 浅色侧边栏 200px 白底 + 卡片式多标签 40px + 48px 独立面包屑行。
+> **v2.10 框架改版**：交付默认 MixedLayout（`layout/mixed-layout.html`）—— 通栏顶栏 56px 深蓝 #0C1D43 + 浅色侧边栏 200px 白底 + 卡片式多标签 40px + 内容流顶部面包屑（**v2.10.3 起不再占独立 48px 行**，见下）。
 > **深色侧边栏变体已废弃**（`layout/dark-side-layout.html` 已删除，20 个 `--nav-color-sider*` Token 已清理）。存量页面迁移对照见 `components/layout.md` §7.5 末尾。
 >
 > v2.8 图表提示：手写 SVG 图表必须加 `max-height` 兜底，环形图直径要锁死（220px），
@@ -23,9 +23,9 @@
 
 | 模板 | 分类 | 用途 | 状态 |
 | :-- | :-- | :-- | :-- |
-| `layout/mixed-layout.html` | 布局 | **v2.10 唯一布局**：通栏顶栏（56px 深蓝）+ 浅色侧边栏（200px 白底）+ 卡片式多标签 + 48px 独立面包屑行 | v2.10 新增 |
+| `layout/mixed-layout.html` | 布局 | **v2.10 唯一布局**：通栏顶栏（56px 深蓝）+ 浅色侧边栏（200px 白底）+ 卡片式多标签 + 内容流顶部面包屑（v2.10.3 起并入内容流，无独立行/无背景） | v2.10 新增 / v2.10.3 收尾 |
 | `layout/side-layout.html` | 布局 | 侧边导航布局（仅作选型参考） | 仅作参考 |
-| `navigation/multi-tab-nav.html` | 导航 | **多标签导航**（卡片式页签 + 箭头溢出切换、三项关闭策略） | v2.10 卡片化 |
+| `navigation/multi-tab-nav.html` | 导航 | **多标签导航**（卡片式页签 + 箭头溢出切换、三项关闭策略；页签宽度由内容决定） | v2.10 卡片化 / v2.10.3 同步 |
 | `table/basic-table.html` | 表格 | 基础表格（表格卡节奏、操作列、分页） | 已沉淀 |
 | `table/fixed-action-table.html` | 表格 | **固定操作列表格**（sticky 右固定列 + 分隔阴影） | v2.4 沉淀 |
 | `form/basic-form.html` | 表单 | 基础表单（垂直布局、字段宽度档、底部操作栏） | 已沉淀 |
@@ -41,7 +41,7 @@
 
 | 标杆页 | 类型 | 看点 |
 | :-- | :-- | :-- |
-| `../examples/demo.html` | 列表页 | v2.10 MixedLayout：通栏顶栏 + 浅色侧边栏、卡片式多标签、48px 独立面包屑行、固定操作列表格、常驻底部操作栏 |
+| `../examples/demo.html` | 列表页 | v2.10 MixedLayout：通栏顶栏 + 浅色侧边栏、卡片式多标签、内容流顶部面包屑（v2.10.3 起）、固定操作列表格、常驻底部操作栏 |
 | `../examples/demo-form.html` | 表单页 | 字段宽度档、双列布局、校验提示、底部操作栏 |
 | `../examples/demo-detail.html` | 详情页 | 描述列表、流程时间轴、关联表格、Tag 标签 |
 | `../examples/demo-dashboard.html` | 仪表盘页 | KPI 指标卡、SVG 图表（`max-height` 兜底 / 环形直径锁死） |
@@ -67,7 +67,7 @@
 
 | 页面类型 | 主模板 | 配套 |
 | :-- | :-- | :-- |
-| 列表页 | `table/fixed-action-table.html`（有横向滚动/固定操作列）<br>`table/basic-table.html`（列少、无需固定） | `layout/mixed-layout.html`（内置卡片式多标签与独立面包屑行） |
+| 列表页 | `table/fixed-action-table.html`（有横向滚动/固定操作列）<br>`table/basic-table.html`（列少、无需固定） | `layout/mixed-layout.html`（内置卡片式多标签与内容流顶部面包屑） |
 | 表单页 | `form/basic-form.html` | 同上 |
 | 详情页 | `description-list/basic-descriptions.html` | 配套表格用 `table/basic-table.html` |
 | 仪表盘页 | `charts/basic-statistic-card.html` | `components/statistic-card.md` 选型表 |
@@ -153,10 +153,10 @@
 - [ ] 无外链资源（CDN、图片、图标字体），图标全部内联 SVG
 - [ ] 页面标题只渲染一次（PageHeader 是唯一来源，强约束 #6）
 - [ ] PageHeader 无 `padding-inline`（强约束 #7）
-- [ ] 面包屑仅出现在有上级路径的页面（强约束 #8）；v2.10 起位于 `.gf-main` 内、多标签栏下方，独立成 48px 一行
+- [ ] 面包屑仅出现在有上级路径的页面（强约束 #8）；**v2.10.3 起位于 `.gf-content` 内并作为其首子元素**，无独立行、无背景，上下留白由 `padding: var(--space-3) 0` 自带；`.gf-content` 的 `padding-top` 必须为 0（由 [E4-2] 自动校验）
 - [ ] 分页器未出现 margin + padding 叠加 32px（强约束 #12）
 - [ ] 固定操作列使用 `border-collapse: separate`（强约束 #18）
-- [ ] 多标签为卡片式（页签自适应宽度 112–320px、可关闭页签右侧留白 32px 使 X 不挤文字、激活白底 + 主色文字、页签间 1px 分隔线、栏体下投影且肉眼可见），溢出用箭头、滚动条隐藏（强约束 #19）
+- [ ] 多标签为卡片式（页签宽度由内容决定、可关闭页签右侧留白 32px 使 X 不挤文字、激活白底 + 主色文字、页签间 1px 分隔线、栏体下投影且肉眼可见），溢出用箭头、滚动条隐藏（强约束 #19）
 - [ ] 指标卡 mini chart 为 SVG sparkline，非 img 占位
 - [ ] 浮层容器 `padding: 0`，分割线横向到边缘
 - [ ] 浮层上下居中且有 `max-width: calc(100vw - 48px)` 兜底
@@ -171,7 +171,7 @@
 | `check-tokens.js` | Token **双向**对齐校验 | `node design-specs/scripts/check-tokens.js design-specs --strict [--json]` |
 | `new-page.js` | 一键生成页面 / 浮层脚手架 | `node design-specs/scripts/new-page.js --type=list --name=产品列表` |
 | `install-hooks.js` | 把规范校验装进 git 提交环节 | `node design-specs/scripts/install-hooks.js install`<br>📖 完整用法见 **[HOOKS-GUIDE.md](./HOOKS-GUIDE.md)** |
-| `check-design-sync.js` | 设计稿 ↔ 规范**双向**核对（抓人工转录误差） | `node design-specs/scripts/check-design-sync.js <导出文件>`<br>📖 映射与流程见 `../foundation/design-sync.md` |
+| `check-design-sync.js` | 设计稿 ↔ 规范**双向**核对（抓两个真值源的漂移） | `node design-specs/scripts/check-design-sync.js <导出文件>`<br>📖 映射与流程见 `../foundation/design-sync.md` |
 
 #### 提交门禁（推荐：让约束自动生效）
 
@@ -240,7 +240,8 @@ node design-specs/scripts/new-page.js --type=form --name=新增交易申报 --la
 ### check-design-sync.js（设计稿 ↔ 规范）
 
 `check-tokens.js` 管的是「交付物有没有按规范写」，`check-design-sync.js` 管的是更上游的一段——
-**规范里的数有没有抄对设计稿**。这一段长期靠人工转录，抄错不会报错，只会悄悄变成规范的一部分。
+**规范里的数跟设计稿对不对得上**。设计稿和规范是两个各自演进的真值源，不同步就会漂移——
+漂移不会报错，只会悄悄变成规范的一部分，等下游页面长歪了才被发现。
 
 ```bash
 # 1) 设计师导出变量文件，照 design-export.sample.json / .csv 填
@@ -253,14 +254,14 @@ node design-specs/scripts/check-design-sync.js <导出文件> --strict
 
 | 差异 | 含义 | 处置 |
 | :-- | :-- | :-- |
-| **D3 同名不同值** | **转录误差**（核心目标）：规范与设计稿取值不一致 | 先定哪边是「意图源」再改另一边，**禁止两边各留一个数** |
+| **D3 同名不同值** | **真值源冲突**（核心目标）：规范与设计稿取值不一致 | 先定哪边是「意图源」再改另一边，**禁止两边各留一个数** |
 | **D1 设计稿有、规范无** | 规范未收编 | 收编进 `tokens.md`；确属色板预留则标注「预留」并指向替代 Token |
 | **D2 规范有、设计稿无** | 设计稿未同步，或规范虚胖 | 补设计稿 / 按虚胖处理。局部导出时天然很长，默认只列前 12 项 |
 
 自动识别 4 种导出形态：Figma 原生变量、Tokens Studio 嵌套、扁平 JSON、CSV/TSV。
 名称配对会**逐级去掉路径前缀**去试（`global/color/primary` → `--color-primary`），
 `headerHeight` 这类驼峰与 `color/primary` 这类斜杠也能命中。
-`hex + opacity` 会自动合成 rgba——**填充色与不透明度分开导出**是最高频的转录误差来源。
+`hex + opacity` 会自动合成 rgba——**填充色与不透明度分开导出**是最高频的偏差来源。
 
 退出码 0 = 无差异；1 = 存在差异。详见 `../foundation/design-sync.md`。
 
@@ -273,9 +274,34 @@ node design-specs/scripts/check-design-sync.js <导出文件> --strict
 | E3 | 未定义引用 | `var(任意 Token 名)` 被使用但本文件未定义（**交付物 → 规范**） |
 | W1 | 规范未收编 | 文件已定义并使用，但 `tokens.md` 未登记（潜在双源漂移） |
 | I1 | 规范未落地 | `tokens.md` 有定义但全库零使用（信息项，供清理废 Token） |
+| E4 | 框架结构一致 | 框架约定级回归，见下节（v2.10.3 新增） |
 
 > 双向 = 既查「交付物有没有按规范写」，也查「规范有没有收全交付物在用的」。
 > 只做单向会在模板里悄悄长出规范管不到的私有变量——v2.5 之前就是这样欠下 58 个未收编 Token 的。
+
+### check-tokens.js 的 [E4] 框架结构一致性
+
+E1/E2/E3 只管**取值对不对**，管不了**结构对不对**。E4 补的是后者：
+
+| 编号 | 断言 |
+| :-- | :-- |
+| E4-1 | 不得再引用 `tokens.md`「已移除 Token」表中的 Token（自动读表，新增移除项即生效） |
+| E4-2 | 有面包屑时 `.gf-content` 的 `padding-top` 必须为 0 |
+| E4-3 | `.gf-breadcrumb` 禁止 `background` / `height`（背景归 `.gf-content`，高度由内容流决定） |
+| E4-4 | 面包屑必须是 `<main class="gf-content">` 的**首子元素** |
+| E4-5 | `.gf-tabsbar__tab` 禁止 `min-width` / 固定 `width`（宽度由内容 + padding 决定） |
+| E4-6 | 必须存在 `.gf-layout--collapsed .gf-collapse-trigger … { rotate(180deg) }`（收起态箭头向右） |
+| E4-7 | `.gf-tabsbar` 必须 `position: relative` + `z-index`（否则下投影被后续兄弟元素盖住） |
+| E4-8 | `.gf-sider` 背景必须为 `var(--color-bg-card)`（浅色侧栏，深色变体已删） |
+
+只作用于含 `.gf-content` / `.gf-tabsbar` / `.gf-collapse-trigger` 的布局类文件，
+组件片段与独立页面自动跳过——每项都有「相关元素是否出现」的前置条件。
+
+**为什么需要它**：v2.10.3 批量改造 6 份布局文件时，`demo-dashboard.html` 的
+`.gf-content` 把 background 写成 `--color-bg-card`（当时仪表盘走白底例外，v2.10.3 末已取消、统一为 `--color-bg-canvas`），
+整串精确匹配落空 → 它是唯一残留 `padding-top: 16px` 的文件，面包屑比其它页面低 16px。
+而 E1/E2/E3 全 0、校验器报绿，只能靠肉眼发现。
+**结论：框架约定不能只写在文档里——凡是「批量脚本可能漏掉某个文件」的约定，都应进校验器。**
 
 ### 关于 I1「未落地」
 

@@ -366,18 +366,32 @@ if (TYPE === 'login' || IS_OVERLAY_TYPE || LAYOUT === 'none') {
     console.log('· mixed 布局已内置卡片式多标签导航，--tabs 忽略');
   }
 
-  /* 4) 内容区塞进 <main class="gf-content"> */
+  /* 4) 内容区塞进 <main class="gf-content">
+   *    保留布局模板自带的 .gf-breadcrumb 与 .gf-page-header 作为 main 的首子元素；
+   *    业务内容模板（table/form/detail/dashboard）的 bodyInner 追加在其后。 */
   const mainRe = /(<main\b[^>]*class="[^"]*gf-content[^"]*"[^>]*>)([\s\S]*?)(<\/main>)/i;
-  if (!mainRe.test(output)) throw new Error('布局模板缺少 <main class="gf-content">');
-  output = output.replace(mainRe, `$1\n        ${content.bodyInner.replace(/\n/g, '\n        ')}\n      $3`);
+  const mainMatch = output.match(mainRe);
+  if (!mainMatch) throw new Error('布局模板缺少 <main class="gf-content">');
+  const mainOpen = mainMatch[1];
+  const mainInner = mainMatch[2];
+  const mainClose = mainMatch[3];
+  // 从布局模板里抽出 .gf-breadcrumb 与 .gf-page-header（业务内容模板可能也自带 PageHeader，见 4.1）
+  const bcMatch = mainInner.match(/[ \t]*<nav\b[^>]*class="[^"]*gf-breadcrumb[^"]*"[\s\S]*?<\/nav>\s*/i);
+  const breadcrumb = bcMatch ? bcMatch[0] : '';
+  const hasLayoutHeader = /class="[^"]*gf-page-header[^"]*"/.test(mainInner);
+  output = output.replace(mainRe, `${mainOpen}\n        ${breadcrumb}${content.bodyInner.replace(/\n/g, '\n        ')}\n      ${mainClose}`);
 
   /* 4.1) 兜底 PageHeader：指标卡等内容模板自带标题区，缺则补一个
-   *      强约束 #6：标题只能由页面层 PageHeader 渲染一次，布局层不得重复 */
-  if (!/class="gf-page-header"/.test(output)) {
+   *      强约束 #6：标题只能由页面层 PageHeader 渲染一次，布局层不得重复
+   *      注意：v2.10.3 起面包屑已并入 main 内部，本兜底插在 breadcrumb 之后、bodyInner 之前 */
+  if (!hasLayoutHeader && !/class="gf-page-header"/.test(output)) {
     output = output.replace(mainRe,
-      '$1\n        <div class="gf-page-header">\n' +
+      '$1\n        ' + breadcrumb +
+      '\n        <div class="gf-page-header">\n' +
       `          <h1 class="gf-page-header__title">${NAME}</h1>\n` +
-      '        </div>\n        $2      $3');
+      '        </div>' +
+      '\n        ' + content.bodyInner.replace(/\n/g, '\n        ') +
+      '\n      $3');
     if (!/\.gf-page-header__title/.test(output)) {
       const headerCss = rulesContaining(layout.style, ['.gf-page-header']);
       if (headerCss) {
